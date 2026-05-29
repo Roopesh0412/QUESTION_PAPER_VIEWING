@@ -153,6 +153,11 @@ async def create_question(
     request: Request,
     current_user: dict = Depends(admin_auth)
 ):
+    if current_user["email"].lower() != "manchestertechnologiess@gmail.com":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access Denied: Only manchestertechnologiess@gmail.com is authorized to manage questions."
+        )
     question_id = str(uuid.uuid4())
     question_doc = {
         "_id": question_id,
@@ -173,6 +178,11 @@ async def bulk_upload_questions(
     request: Request,
     current_user: dict = Depends(admin_auth)
 ):
+    if current_user["email"].lower() != "manchestertechnologiess@gmail.com":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access Denied: Only manchestertechnologiess@gmail.com is authorized to manage questions."
+        )
     if not payload:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -209,6 +219,11 @@ async def update_question(
     request: Request,
     current_user: dict = Depends(admin_auth)
 ):
+    if current_user["email"].lower() != "manchestertechnologiess@gmail.com":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access Denied: Only manchestertechnologiess@gmail.com is authorized to manage questions."
+        )
     question = await questions_col.find_one({"_id": question_id})
     if not question:
         raise HTTPException(
@@ -242,6 +257,11 @@ async def delete_question(
     request: Request,
     current_user: dict = Depends(admin_auth)
 ):
+    if current_user["email"].lower() != "manchestertechnologiess@gmail.com":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access Denied: Only manchestertechnologiess@gmail.com is authorized to manage questions."
+        )
     question = await questions_col.find_one({"_id": question_id})
     if not question:
         raise HTTPException(
