@@ -26,6 +26,7 @@ async def seed_database():
         # Teachers who can view everything
         {"email": "tarunmallu2005@gmail.com", "subject": "All", "role": "teacher", "is_active": True},
         {"email": "sampathkumarcm87@gmail.com", "subject": "All", "role": "teacher", "is_active": True},
+        {"email": "roopesh041204@gmail.com", "subject": "All", "role": "teacher", "is_active": True},
         # Physics
         {"email": "shrishass85@gmail.com", "subject": "Physics", "role": "teacher", "is_active": True},
         {"email": "sreddy07@gmail.com", "subject": "Physics", "role": "teacher", "is_active": True},
