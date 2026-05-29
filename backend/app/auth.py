@@ -162,25 +162,45 @@ async def verify_otp(payload: OTPVerifyRequest, request: Request):
     role = teacher.get("role", "teacher")
     subject = teacher.get("subject", "")
 
-    # 5. ENFORCE SINGLE DEVICE LOGIN
-    # Invalidate any existing active sessions
-    existing_active = await sessions_col.find(
-        {"email": email, "logout_time": None}
-    ).to_list(length=100)
-    
-    if existing_active:
-        now_str = datetime.datetime.utcnow().isoformat() + "Z"
-        await sessions_col.update_many(
-            {"email": email, "logout_time": None},
-            {"$set": {"logout_time": now_str}}
-        )
-        for old_sess in existing_active:
-            await log_audit_action(
-                email, 
-                f"session_terminated_concurrent_login (new device: {device_id}, old: {old_sess.get('device_id')})", 
-                request, 
-                old_sess.get("device_id")
+    # 5. ENFORCE SINGLE DEVICE LOGIN (or up to 8 sessions for manchestertechnologiess@gmail.com)
+    if email == "manchestertechnologiess@gmail.com":
+        existing_active = await sessions_col.find(
+            {"email": email, "logout_time": None}
+        ).sort("login_time", 1).to_list(length=100)
+        
+        if len(existing_active) >= 8:
+            num_to_terminate = len(existing_active) - 7
+            now_str = datetime.datetime.utcnow().isoformat() + "Z"
+            for i in range(num_to_terminate):
+                old_sess = existing_active[i]
+                await sessions_col.update_one(
+                    {"_id": old_sess["_id"]},
+                    {"$set": {"logout_time": now_str}}
+                )
+                await log_audit_action(
+                    email, 
+                    f"session_terminated_max_concurrency_limit (new device: {device_id}, old: {old_sess.get('device_id')})", 
+                    request, 
+                    old_sess.get("device_id")
+                )
+    else:
+        existing_active = await sessions_col.find(
+            {"email": email, "logout_time": None}
+        ).to_list(length=100)
+        
+        if existing_active:
+            now_str = datetime.datetime.utcnow().isoformat() + "Z"
+            await sessions_col.update_many(
+                {"email": email, "logout_time": None},
+                {"$set": {"logout_time": now_str}}
             )
+            for old_sess in existing_active:
+                await log_audit_action(
+                    email, 
+                    f"session_terminated_concurrent_login (new device: {device_id}, old: {old_sess.get('device_id')})", 
+                    request, 
+                    old_sess.get("device_id")
+                )
 
     # 6. Create New Session
     session_id = str(uuid.uuid4())
@@ -280,24 +300,45 @@ async def login(payload: LoginRequest, request: Request):
             detail="Invalid email or password."
         )
 
-    # 3. Create New Session (Enforce single device session)
-    existing_active = await sessions_col.find(
-        {"email": email, "logout_time": None}
-    ).to_list(length=100)
-    
-    if existing_active:
-        now_str = datetime.datetime.utcnow().isoformat() + "Z"
-        await sessions_col.update_many(
-            {"email": email, "logout_time": None},
-            {"$set": {"logout_time": now_str}}
-        )
-        for old_sess in existing_active:
-            await log_audit_action(
-                email, 
-                f"session_terminated_concurrent_login (new device: {device_id}, old: {old_sess.get('device_id')})", 
-                request, 
-                old_sess.get("device_id")
+    # 3. Create New Session (Enforce single device session, up to 8 sessions for manchestertechnologiess@gmail.com)
+    if email == "manchestertechnologiess@gmail.com":
+        existing_active = await sessions_col.find(
+            {"email": email, "logout_time": None}
+        ).sort("login_time", 1).to_list(length=100)
+        
+        if len(existing_active) >= 8:
+            num_to_terminate = len(existing_active) - 7
+            now_str = datetime.datetime.utcnow().isoformat() + "Z"
+            for i in range(num_to_terminate):
+                old_sess = existing_active[i]
+                await sessions_col.update_one(
+                    {"_id": old_sess["_id"]},
+                    {"$set": {"logout_time": now_str}}
+                )
+                await log_audit_action(
+                    email, 
+                    f"session_terminated_max_concurrency_limit (new device: {device_id}, old: {old_sess.get('device_id')})", 
+                    request, 
+                    old_sess.get("device_id")
+                )
+    else:
+        existing_active = await sessions_col.find(
+            {"email": email, "logout_time": None}
+        ).to_list(length=100)
+        
+        if existing_active:
+            now_str = datetime.datetime.utcnow().isoformat() + "Z"
+            await sessions_col.update_many(
+                {"email": email, "logout_time": None},
+                {"$set": {"logout_time": now_str}}
             )
+            for old_sess in existing_active:
+                await log_audit_action(
+                    email, 
+                    f"session_terminated_concurrent_login (new device: {device_id}, old: {old_sess.get('device_id')})", 
+                    request, 
+                    old_sess.get("device_id")
+                )
 
     session_id = str(uuid.uuid4())
     login_time = datetime.datetime.utcnow().isoformat() + "Z"

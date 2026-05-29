@@ -147,21 +147,15 @@ async def get_current_user(
             detail="Teacher account is deactivated",
         )
 
-    # B. Single Device Session Check
+    # B. Single Device Session Check (supports multi-session for manchestertechnologiess@gmail.com)
     active_session = await sessions_col.find_one({
         "email": email.lower(),
+        "session_id": session_id,
         "logout_time": None
     })
     
     if not active_session:
-        # No active session found in database
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="SESSION_TERMINATED",
-        )
-
-    if active_session.get("session_id") != session_id:
-        # Session IDs do not match (a newer device has logged in)
+        # No active session found in database for this specific session
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="SESSION_TERMINATED",
