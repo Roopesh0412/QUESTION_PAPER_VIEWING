@@ -41,8 +41,10 @@ api.interceptors.response.use(
           window.location.href = '/login?reason=expired';
         }
       } else if (status === 403) {
-        // Unauthorized role access
-        window.location.href = '/unauthorized';
+        // Unauthorized role access - bypass redirect for login request to let the login form show suspension details
+        if (originalRequest && originalRequest.url && !originalRequest.url.includes('/auth/login')) {
+          window.location.href = '/unauthorized';
+        }
       }
     }
     return Promise.reject(error);

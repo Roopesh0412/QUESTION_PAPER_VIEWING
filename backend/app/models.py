@@ -10,6 +10,11 @@ class OTPVerifyRequest(BaseModel):
     otp: str
     device_id: str
 
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+    device_id: str
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str

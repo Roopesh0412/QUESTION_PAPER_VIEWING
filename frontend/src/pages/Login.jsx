@@ -7,14 +7,10 @@ export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
-  const [step, setStep] = useState(1); // 1 = Email, 2 = OTP
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  
-  // Cooldown timer
-  const [resendCooldown, setResendCooldown] = useState(0);
 
   // Notifications from URL
   const [notification, setNotification] = useState('');
@@ -37,50 +33,24 @@ export default function Login() {
       setNotification('Your account has been logged in from another device. Previous session terminated.');
     } else if (reason === 'expired') {
       setNotification('Your security token has expired. Please login again.');
+    } else if (reason === 'screenshot_violation') {
+      setNotification('Access Denied: Your account has been suspended for 1 hour due to a security violation (screenshot attempt).');
     }
   }, [searchParams]);
 
-  // Resend OTP countdown
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const interval = setInterval(() => {
-      setResendCooldown((prev) => prev - 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [resendCooldown]);
-
-  const handleRequestOtp = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email || !password) return;
 
     setLoading(true);
     setError('');
     setSuccessMsg('');
 
     try {
-      const res = await api.post('/auth/request-otp', { email });
-      setSuccessMsg(res.data.message);
-      setStep(2);
-      setResendCooldown(60); // 60 seconds delay
-    } catch (err) {
-      setError(err.response?.data?.detail || 'An error occurred. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
-    if (!otp) return;
-
-    setLoading(true);
-    setError('');
-
-    try {
       const deviceId = getDeviceId();
-      const res = await api.post('/auth/verify-otp', {
+      const res = await api.post('/auth/login', {
         email,
-        otp,
+        password,
         device_id: deviceId,
       });
 
@@ -95,7 +65,7 @@ export default function Login() {
         role,
         subject,
         sessionId: payload.session_id,
-        loginTime: new Date(payload.exp * 1000 - 86400 * 1000).toLocaleString(), // derived approx login time or formatted string
+        loginTime: new Date(payload.exp * 1000 - 86400 * 1000).toLocaleString(),
       };
 
       localStorage.setItem('token', access_token);
@@ -107,7 +77,7 @@ export default function Login() {
         navigate('/dashboard');
       }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Invalid OTP code. Please try again.');
+      setError(err.response?.data?.detail || 'Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -158,112 +128,60 @@ export default function Login() {
             </div>
           )}
 
-          {/* Step 1: Request OTP */}
-          {step === 1 ? (
-            <form onSubmit={handleRequestOtp} className="space-y-6">
-              <div>
-                <label className="block text-slate-300 text-xs font-bold uppercase tracking-wider mb-2">
-                  Teacher Email Address
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                    <Mail className="w-5 h-5" />
-                  </div>
-                  <input
-                    type="email"
-                    required
-                    placeholder="teacher@domain.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="block w-full pl-11 pr-4 py-3 bg-slate-900/60 border border-slate-700/60 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all font-medium"
-                  />
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div>
+              <label className="block text-slate-300 text-xs font-bold uppercase tracking-wider mb-2">
+                Teacher Email Address
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                  <Mail className="w-5 h-5" />
                 </div>
-                <p className="text-[11px] text-slate-500 mt-2">
-                  Enter your registered institutional email to verify your access.
-                </p>
+                <input
+                  type="email"
+                  required
+                  placeholder="teacher@domain.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="block w-full pl-11 pr-4 py-3 bg-slate-900/60 border border-slate-700/60 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all font-medium"
+                />
               </div>
+            </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl shadow-lg shadow-brand-600/30 transition-all disabled:opacity-50"
-              >
-                {loading ? (
-                  <RefreshCw className="w-5 h-5 animate-spin" />
-                ) : (
-                  <>
-                    <span>Generate Secure OTP</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            </form>
-          ) : (
-            /* Step 2: Verify OTP */
-            <form onSubmit={handleVerifyOtp} className="space-y-6">
-              <div>
-                <div className="flex justify-between items-baseline mb-2">
-                  <label className="block text-slate-300 text-xs font-bold uppercase tracking-wider">
-                    Enter 6-Digit OTP
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setStep(1)}
-                    className="text-[11px] font-bold text-slate-400 hover:text-white"
-                  >
-                    Change Email
-                  </button>
+            <div>
+              <label className="block text-slate-300 text-xs font-bold uppercase tracking-wider mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                  <Key className="w-5 h-5" />
                 </div>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                    <Key className="w-5 h-5" />
-                  </div>
-                  <input
-                    type="text"
-                    required
-                    maxLength={6}
-                    pattern="[0-9]{6}"
-                    placeholder="000000"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    className="block w-full pl-11 pr-4 py-3 bg-slate-900/60 border border-slate-700/60 rounded-xl text-white placeholder-slate-500 tracking-[0.4em] text-center font-bold text-lg focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
-                  />
-                </div>
-                <p className="text-[11px] text-slate-500 mt-2">
-                  Check your inbox. We have sent a 6-digit access code.
-                </p>
+                <input
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="block w-full pl-11 pr-4 py-3 bg-slate-900/60 border border-slate-700/60 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all font-medium"
+                />
               </div>
+            </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl shadow-lg shadow-brand-600/30 transition-all disabled:opacity-50"
-              >
-                {loading ? (
-                  <RefreshCw className="w-5 h-5 animate-spin" />
-                ) : (
-                  <span>Verify and Authenticate</span>
-                )}
-              </button>
-
-              {/* Cooldown Timer */}
-              <div className="text-center pt-2">
-                {resendCooldown > 0 ? (
-                  <span className="text-xs text-slate-500 font-medium">
-                    Resend code in <strong className="font-mono text-slate-400">{resendCooldown}s</strong>
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleRequestOtp}
-                    className="text-xs font-bold text-brand-400 hover:text-brand-300 underline"
-                  >
-                    Resend OTP Code
-                  </button>
-                )}
-              </div>
-            </form>
-          )}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl shadow-lg shadow-brand-600/30 transition-all disabled:opacity-50"
+            >
+              {loading ? (
+                <RefreshCw className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  <span>Sign In</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
 
         </div>
 

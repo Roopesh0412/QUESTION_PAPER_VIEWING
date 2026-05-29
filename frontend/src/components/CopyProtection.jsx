@@ -65,6 +65,42 @@ export default function CopyProtection({ apiClient }) {
       const isCtrl = e.ctrlKey || e.metaKey; // supports Mac command key
       const key = e.key.toLowerCase();
 
+      // Block PrintScreen key
+      if (e.key === 'PrintScreen' || e.key === 'Snapshot') {
+        e.preventDefault();
+        (async () => {
+          await logAttempt('screenshot');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login?reason=screenshot_violation';
+        })();
+        return;
+      }
+
+      // Block Windows Snipping Tool (Meta+Shift+S)
+      if (e.metaKey && e.shiftKey && key === 's') {
+        e.preventDefault();
+        (async () => {
+          await logAttempt('screenshot');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login?reason=screenshot_violation';
+        })();
+        return;
+      }
+
+      // Block macOS Screenshot (Cmd+Shift+4 / Cmd+Shift+3)
+      if (e.metaKey && e.shiftKey && (key === '4' || key === '3')) {
+        e.preventDefault();
+        (async () => {
+          await logAttempt('screenshot');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login?reason=screenshot_violation';
+        })();
+        return;
+      }
+
       // Block Ctrl+C (copy)
       if (isCtrl && key === 'c') {
         e.preventDefault();
@@ -136,6 +172,17 @@ export default function CopyProtection({ apiClient }) {
       }
     };
 
+    const handleKeyUp = (e) => {
+      if (e.key === 'PrintScreen' || e.key === 'Snapshot') {
+        (async () => {
+          await logAttempt('screenshot');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login?reason=screenshot_violation';
+        })();
+      }
+    };
+
     // Attach event listeners
     window.addEventListener('contextmenu', handleContextMenu);
     window.addEventListener('selectstart', handleSelectStart);
@@ -144,6 +191,7 @@ export default function CopyProtection({ apiClient }) {
     window.addEventListener('cut', handleCut);
     window.addEventListener('paste', handlePaste);
     window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
 
     // Inject global CSS rules
     const styleEl = document.createElement('style');
@@ -170,6 +218,7 @@ export default function CopyProtection({ apiClient }) {
       window.removeEventListener('cut', handleCut);
       window.removeEventListener('paste', handlePaste);
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
       document.head.removeChild(styleEl);
     };
   }, [apiClient]);

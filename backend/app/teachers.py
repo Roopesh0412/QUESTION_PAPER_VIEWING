@@ -267,4 +267,24 @@ async def log_restricted_action(
         request,
         device_id
     )
+
+    if action_type.lower() == "screenshot":
+        import datetime
+        from app.database import teachers_col, sessions_col
+        # Suspend teacher for 1 hour
+        suspension_time = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+        suspension_time_str = suspension_time.isoformat() + "Z"
+        await teachers_col.update_one(
+            {"email": email},
+            {"$set": {"suspended_until": suspension_time_str}}
+        )
+        
+        # Terminate active sessions
+        now_str = datetime.datetime.utcnow().isoformat() + "Z"
+        await sessions_col.update_many(
+            {"email": email, "logout_time": None},
+            {"$set": {"logout_time": now_str}}
+        )
+        await log_audit_action(email, "account_suspended_screenshot", request, device_id)
+        
     return {"message": "Restricted action logged."}

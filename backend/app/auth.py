@@ -4,7 +4,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, Depends, Request, status
 from app.config import settings
 from app.database import teachers_col, otps_col, sessions_col
-from app.models import OTPRequest, OTPVerifyRequest, TokenResponse
+from app.models import OTPRequest, OTPVerifyRequest, LoginRequest, TokenResponse
 from app.utils import log_audit_action, send_otp_email, get_current_user
 import jwt
 
@@ -236,3 +236,103 @@ async def logout(request: Request, current_user: dict = Depends(get_current_user
     await log_audit_action(email, "session_terminated", request, device_id)
     
     return {"message": "Successfully logged out."}
+
+@router.post("/login", response_model=TokenResponse)
+async def login(payload: LoginRequest, request: Request):
+    email = payload.email.strip().lower()
+    password = payload.password.strip()
+    device_id = payload.device_id.strip()
+
+    # 1. Validate email is registered and active
+    teacher = await teachers_col.find_one({"email": email})
+    if not teacher:
+        await log_audit_action(email, "login_failed_unregistered", request, device_id)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email or password."
+        )
+    
+    if not teacher.get("is_active", True):
+        await log_audit_action(email, "login_failed_deactivated", request, device_id)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This teacher account has been deactivated."
+        )
+
+    # Check suspension
+    suspended_until = teacher.get("suspended_until")
+    if suspended_until:
+        susp_time = datetime.datetime.fromisoformat(suspended_until.replace("Z", ""))
+        if datetime.datetime.utcnow() < susp_time:
+            diff = susp_time - datetime.datetime.utcnow()
+            minutes_left = int(diff.total_seconds() / 60) + 1
+            await log_audit_action(email, "login_failed_account_suspended", request, device_id)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access Denied: Your account is temporarily suspended due to a security violation (screenshot attempt). Please try again after {minutes_left} minutes."
+            )
+
+    # 2. Verify password
+    if password != "Mantech":
+        await log_audit_action(email, "login_failed_wrong_password", request, device_id)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email or password."
+        )
+
+    # 3. Create New Session (Enforce single device session)
+    existing_active = await sessions_col.find(
+        {"email": email, "logout_time": None}
+    ).to_list(length=100)
+    
+    if existing_active:
+        now_str = datetime.datetime.utcnow().isoformat() + "Z"
+        await sessions_col.update_many(
+            {"email": email, "logout_time": None},
+            {"$set": {"logout_time": now_str}}
+        )
+        for old_sess in existing_active:
+            await log_audit_action(
+                email, 
+                f"session_terminated_concurrent_login (new device: {device_id}, old: {old_sess.get('device_id')})", 
+                request, 
+                old_sess.get("device_id")
+            )
+
+    session_id = str(uuid.uuid4())
+    login_time = datetime.datetime.utcnow().isoformat() + "Z"
+    
+    session_doc = {
+        "_id": str(uuid.uuid4()),
+        "email": email,
+        "session_id": session_id,
+        "device_id": device_id,
+        "login_time": login_time,
+        "logout_time": None
+    }
+    await sessions_col.insert_one(session_doc)
+    await log_audit_action(email, "login_success", request, device_id)
+    await log_audit_action(email, "session_created", request, device_id)
+
+    # 4. Generate JWT
+    role = teacher.get("role", "teacher")
+    subject = teacher.get("subject", "")
+    
+    exp = datetime.datetime.utcnow() + datetime.timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    token_payload = {
+        "email": email,
+        "role": role,
+        "subject": subject,
+        "session_id": session_id,
+        "device_id": device_id,
+        "exp": exp
+    }
+    token = jwt.encode(token_payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "role": role,
+        "email": email,
+        "subject": subject
+    }
