@@ -118,6 +118,59 @@ export default function AdminDashboard() {
     }
   };
 
+  const [isDragActive, setIsDragActive] = useState(false);
+  const [imageInputMode, setImageInputMode] = useState('upload'); // 'upload' or 'url'
+
+  const handleImageFile = (file) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setQErr('Only image files are allowed.');
+      return;
+    }
+    // Limit file size to 3MB
+    if (file.size > 3 * 1024 * 1024) {
+      setQErr('Image size should be less than 3MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setQImageUrl(e.target.result); // Base64 data URL
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePasteImage = (e) => {
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (const item of items) {
+      if (item.kind === 'file' && item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        handleImageFile(file);
+        e.preventDefault();
+        break;
+      }
+    }
+  };
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setIsDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setIsDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleImageFile(e.dataTransfer.files[0]);
+    }
+  };
+
   const handleAddQuestion = async (e) => {
     e.preventDefault();
     setQMsg('');
@@ -518,30 +571,96 @@ export default function AdminDashboard() {
                   })}
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Correct Answer</label>
-                    <select
-                      value={qAnswer}
-                      onChange={(e) => setQAnswer(e.target.value)}
-                      className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white"
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Correct Answer</label>
+                  <select
+                    value={qAnswer}
+                    onChange={(e) => setQAnswer(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white"
+                  >
+                    <option value="A">Option A</option>
+                    <option value="B">Option B</option>
+                    <option value="C">Option C</option>
+                    <option value="D">Option D</option>
+                  </select>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-xs font-bold text-slate-500">Question Image (Optional)</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageInputMode(imageInputMode === 'upload' ? 'url' : 'upload');
+                        setQImageUrl('');
+                      }}
+                      className="text-[10px] text-brand-600 hover:underline font-bold"
                     >
-                      <option value="A">Option A</option>
-                      <option value="B">Option B</option>
-                      <option value="C">Option C</option>
-                      <option value="D">Option D</option>
-                    </select>
+                      {imageInputMode === 'upload' ? 'Or paste web image URL' : 'Or drag & drop/paste file'}
+                    </button>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Image URL (Optional)</label>
-                    <input
-                      type="url"
-                      placeholder="https://example.com/image.png"
-                      value={qImageUrl}
-                      onChange={(e) => setQImageUrl(e.target.value)}
-                      className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white"
-                    />
-                  </div>
+
+                  {imageInputMode === 'upload' ? (
+                    <div 
+                      onDragEnter={handleDrag}
+                      onDragOver={handleDrag}
+                      onDragLeave={handleDrag}
+                      onDrop={handleDrop}
+                      onPaste={handlePasteImage}
+                      className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all ${
+                        isDragActive 
+                          ? 'border-brand-500 bg-brand-50/10' 
+                          : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 hover:bg-slate-100 dark:hover:bg-slate-900/30'
+                      }`}
+                      onClick={() => document.getElementById('image-upload-input').click()}
+                    >
+                      <input
+                        id="image-upload-input"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            handleImageFile(e.target.files[0]);
+                          }
+                        }}
+                      />
+                      {qImageUrl ? (
+                        <div className="relative group/img max-w-xs mx-auto" onClick={(e) => e.stopPropagation()}>
+                          <img src={qImageUrl} alt="Preview" className="max-h-24 mx-auto rounded border border-slate-200 shadow-sm" />
+                          <button
+                            type="button"
+                            onClick={() => setQImageUrl('')}
+                            className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-md transition-all hover:scale-110"
+                            title="Remove Image"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="py-2 text-slate-400 select-none">
+                          <Upload className="w-6 h-6 mx-auto mb-1 text-slate-400 dark:text-slate-600" />
+                          <span className="text-xs font-bold block text-slate-650 dark:text-slate-400">Drag & Drop image here</span>
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5">Click to browse or Paste image directly (Ctrl+V)</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <input
+                        type="url"
+                        placeholder="https://example.com/image.png"
+                        value={qImageUrl}
+                        onChange={(e) => setQImageUrl(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white"
+                      />
+                      {qImageUrl && (
+                        <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                          <img src={qImageUrl} alt="URL Preview" className="max-h-24 mx-auto rounded border border-slate-200 shadow-sm" />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <button
@@ -643,6 +762,16 @@ export default function AdminDashboard() {
                   <div className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-2 pr-8 leading-snug">
                     <MathJaxRenderer content={q.question} />
                   </div>
+
+                  {q.image_url && (
+                    <div className="my-2.5 max-w-full overflow-hidden rounded border border-slate-200/80 dark:border-slate-800 shadow-inner bg-white">
+                      <img 
+                        src={q.image_url} 
+                        alt="Question diagram" 
+                        className="max-h-24 w-auto object-contain mx-auto" 
+                      />
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-2 mt-3 text-xs text-slate-500 font-medium">
                     {q.options.map((opt, oIdx) => (
