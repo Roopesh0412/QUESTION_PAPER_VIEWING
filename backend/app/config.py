@@ -2,7 +2,7 @@ import os
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    MONGODB_URI: str = "mongodb+srv://Roopesh:Sanjana123@cluster0.qsk7ii7.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    MONGODB_URI: str = "mongodb+srv://Roopesh:Roopesh041204@cluster0.qsk7ii7.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
     JWT_SECRET: str = "MANCHESTER_TECH_SUPER_SECRET_KEY_12345"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 1 day session
