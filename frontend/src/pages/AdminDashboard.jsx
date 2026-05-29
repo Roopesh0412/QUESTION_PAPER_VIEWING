@@ -551,6 +551,8 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-2 gap-3">
                   {qOptions.map((opt, oIdx) => {
                     const label = String.fromCharCode(65 + oIdx); // A, B, C, D
+                    // Strip the "A. ", "B. " prefix for the visual input value to avoid double-prepending bugs
+                    const displayValue = opt.startsWith(`${label}. `) ? opt.substring(3) : opt;
                     return (
                       <div key={oIdx}>
                         <label className="block text-xs font-bold text-slate-500 mb-1">Option {label}</label>
@@ -558,7 +560,7 @@ export default function AdminDashboard() {
                           type="text"
                           required
                           placeholder={`Option ${label}`}
-                          value={opt}
+                          value={displayValue}
                           onChange={(e) => {
                             const updated = [...qOptions];
                             updated[oIdx] = `${label}. ${e.target.value}`;
