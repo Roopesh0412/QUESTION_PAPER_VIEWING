@@ -4,7 +4,22 @@ import axios from 'axios';
 export default function CopyProtection({ apiClient }) {
   const [toasts, setToasts] = useState([]);
 
+  // Check if current user should bypass copy protection
+  const isBypassed = (() => {
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const u = JSON.parse(storedUser);
+        return u.email && u.email.toLowerCase() === 'manchestertechnologiess@gmail.com';
+      }
+    } catch (err) {
+      console.error('Failed to parse user for copy protection bypass check:', err);
+    }
+    return false;
+  })();
+
   const triggerToast = (message) => {
+    if (isBypassed) return;
     const id = Date.now();
     setToasts((prev) => [...prev, { id, message }]);
     
@@ -15,7 +30,7 @@ export default function CopyProtection({ apiClient }) {
   };
 
   const logAttempt = async (actionName) => {
-    if (!apiClient) return;
+    if (!apiClient || isBypassed) return;
     try {
       await apiClient.post('/log-restricted-action', { action: actionName });
     } catch (err) {
@@ -24,6 +39,7 @@ export default function CopyProtection({ apiClient }) {
   };
 
   useEffect(() => {
+    if (isBypassed) return;
     // 1. Right Click blocking
     const handleContextMenu = (e) => {
       e.preventDefault();
@@ -222,6 +238,8 @@ export default function CopyProtection({ apiClient }) {
       document.head.removeChild(styleEl);
     };
   }, [apiClient]);
+
+  if (isBypassed) return null;
 
   return (
     <div className="fixed top-5 right-5 z-[100000] flex flex-col gap-2 max-w-sm pointer-events-none">
