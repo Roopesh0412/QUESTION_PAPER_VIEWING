@@ -273,6 +273,32 @@ async def delete_question(
     await log_audit_action(current_user["email"], f"admin_delete_question: {question_id}", request, current_user["device_id"])
     return {"message": "Question deleted successfully."}
 
+@router.post("/questions/bulk-delete")
+async def bulk_delete_questions(
+    payload: List[str],
+    request: Request,
+    current_user: dict = Depends(admin_auth)
+):
+    if current_user["email"].lower() != "manchestertechnologiess@gmail.com":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access Denied: Only manchestertechnologiess@gmail.com is authorized to manage questions."
+        )
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No question IDs provided for deletion."
+        )
+    
+    result = await questions_col.delete_many({"_id": {"$in": payload}})
+    await log_audit_action(
+        current_user["email"], 
+        f"admin_bulk_delete_questions: deleted {result.deleted_count} questions", 
+        request, 
+        current_user["device_id"]
+    )
+    return {"message": f"Successfully deleted {result.deleted_count} questions."}
+
 # ==========================================
 # SYSTEM MONITORING (AUDIT LOGS & SESSIONS)
 # ==========================================

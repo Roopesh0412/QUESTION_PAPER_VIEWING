@@ -32,6 +32,7 @@ export default function AdminDashboard() {
   const [qPage, setQPage] = useState(1);
   const [qPages, setQPages] = useState(1);
   const [qFilterSubject, setQFilterSubject] = useState('');
+  const [selectedQIds, setSelectedQIds] = useState([]);
 
   // Sessions state
   const [sessions, setSessions] = useState([]);
@@ -233,6 +234,22 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleBulkDeleteQuestions = async () => {
+    if (selectedQIds.length === 0) return;
+    if (!window.confirm(`Are you sure you want to permanently delete the ${selectedQIds.length} selected questions?`)) return;
+    
+    setQMsg('');
+    setQErr('');
+    try {
+      const res = await api.post('/admin/questions/bulk-delete', selectedQIds);
+      setQMsg(res.data.message);
+      setSelectedQIds([]);
+      fetchQuestions();
+    } catch (err) {
+      setQErr(err.response?.data?.detail || 'Failed to bulk delete questions.');
+    }
+  };
+
   // ----------------------------------------------------
   // API Calls - Active Sessions
   // ----------------------------------------------------
@@ -279,6 +296,7 @@ export default function AdminDashboard() {
     if (activeTab === 'teachers') {
       fetchTeachers();
     } else if (activeTab === 'questions') {
+      setSelectedQIds([]);
       fetchQuestions();
     } else if (activeTab === 'sessions') {
       fetchSessions();
@@ -742,28 +760,98 @@ export default function AdminDashboard() {
                     className="pl-8 pr-3 py-1.5 w-full sm:w-48 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs dark:text-white"
                   />
                 </div>
-              </div>
             </div>
+
+            {/* Bulk Selection Bar */}
+            {questions.length > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-100 dark:border-slate-850 mb-4 text-xs">
+                <label className="flex items-center gap-2 font-bold cursor-pointer text-slate-650 dark:text-slate-400 select-none">
+                  <input
+                    type="checkbox"
+                    checked={questions.length > 0 && questions.every(q => selectedQIds.includes(q._id))}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        const allIds = questions.map(q => q._id);
+                        setSelectedQIds(prev => Array.from(new Set([...prev, ...allIds])));
+                      } else {
+                        const pageIds = questions.map(q => q._id);
+                        setSelectedQIds(prev => prev.filter(id => !pageIds.includes(id)));
+                      }
+                    }}
+                    className="w-4 h-4 text-brand-600 border-slate-300 rounded focus:ring-brand-500"
+                  />
+                  <span>Select All ({questions.length} on page)</span>
+                </label>
+
+                {selectedQIds.length > 0 && (
+                  <div className="flex items-center gap-3 animate-fade-in">
+                    <span className="font-extrabold text-brand-600 dark:text-brand-400">
+                      {selectedQIds.length} Selected
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleBulkDeleteQuestions}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold shadow shadow-red-600/20 transition-all hover:scale-105"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete Selected</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedQIds([])}
+                      className="text-slate-400 hover:text-slate-600 font-bold hover:underline"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Questions list */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {questions.map((q) => (
-                <div key={q._id} className="border border-slate-100 dark:border-slate-850 p-4 rounded-lg bg-slate-50 dark:bg-slate-950/40 relative group">
-                  <button
-                    onClick={() => handleDeleteQuestion(q._id)}
-                    className="absolute top-4 right-4 p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Delete Question"
+              {questions.map((q) => {
+                const isSelected = selectedQIds.includes(q._id);
+                return (
+                  <div 
+                    key={q._id} 
+                    className={`border p-4 rounded-lg bg-slate-50 dark:bg-slate-950/40 relative group transition-all ${
+                      isSelected 
+                        ? 'border-brand-500/60 ring-1 ring-brand-500/25 bg-brand-50/5 dark:bg-brand-950/15' 
+                        : 'border-slate-100 dark:border-slate-850'
+                    }`}
                   >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                    {/* Checkbox for Bulk Selection */}
+                    <div className="absolute top-4 left-4 z-20">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {
+                          setSelectedQIds(prev => 
+                            prev.includes(q._id) 
+                              ? prev.filter(id => id !== q._id) 
+                              : [...prev, q._id]
+                          );
+                        }}
+                        className="w-4 h-4 text-brand-600 border-slate-350 dark:border-slate-800 rounded focus:ring-brand-500 cursor-pointer"
+                      />
+                    </div>
 
-                  <div className="text-[10px] font-bold text-slate-400 uppercase">
-                    {q.subject} &bull; {q.chapter}
-                  </div>
-                  
-                  <div className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-2 pr-8 leading-snug">
-                    <MathJaxRenderer content={q.question} />
-                  </div>
+                    <button
+                      onClick={() => handleDeleteQuestion(q._id)}
+                      className="absolute top-4 right-4 p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 rounded opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                      title="Delete Question"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+
+                    <div className="text-[10px] font-bold text-slate-400 uppercase pl-7">
+                      {q.subject} &bull; {q.chapter}
+                    </div>
+                    
+                    <div className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-2 pr-8 pl-7 leading-snug">
+                      <MathJaxRenderer content={q.question} />
+                    </div>
 
                   {q.image_url && (
                     <div className="my-2.5 max-w-full overflow-hidden rounded border border-slate-200/80 dark:border-slate-800 shadow-inner bg-white">
@@ -787,8 +875,9 @@ export default function AdminDashboard() {
                     Correct Option: {q.answer}
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
+          </div>
 
             {/* Questions list pagination */}
             {qPages > 1 && (
