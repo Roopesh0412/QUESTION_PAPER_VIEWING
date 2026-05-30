@@ -760,6 +760,7 @@ export default function AdminDashboard() {
                     className="pl-8 pr-3 py-1.5 w-full sm:w-48 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs dark:text-white"
                   />
                 </div>
+              </div>
             </div>
 
             {/* Bulk Selection Bar */}
