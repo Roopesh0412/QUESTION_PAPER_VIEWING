@@ -1,5 +1,6 @@
 import datetime
 import uuid
+import re
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, Depends, Request, Query, status
 from app.database import teachers_col, questions_col, sessions_col, audit_logs_col
@@ -246,6 +247,17 @@ async def create_question(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access Denied: Only manchestertechnologiess@gmail.com is authorized to manage questions."
         )
+    
+    q_text_stripped = payload.question.strip()
+    existing = await questions_col.find_one({
+        "question": {"$regex": f"^\s*{re.escape(q_text_stripped)}\s*$", "$options": "i"}
+    })
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This question already exists in the question bank."
+        )
+
     question_id = str(uuid.uuid4())
     question_doc = {
         "_id": question_id,
@@ -287,8 +299,27 @@ async def bulk_upload_questions(
         )
 
     inserted_ids = []
+    processed_texts = set()
+    skipped_count = 0
     for raw_q in payload:
         normalized = normalize_question_data(raw_q)
+        q_text_stripped = normalized["question"].strip()
+        q_text_lower = q_text_stripped.lower()
+        
+        # Skip internal duplicates in the batch itself
+        if q_text_lower in processed_texts:
+            skipped_count += 1
+            continue
+            
+        # Check DB duplicates
+        existing_db = await questions_col.find_one({
+            "question": {"$regex": f"^\s*{re.escape(q_text_stripped)}\s*$", "$options": "i"}
+        })
+        if existing_db:
+            skipped_count += 1
+            continue
+            
+        processed_texts.add(q_text_lower)
         q_id = str(uuid.uuid4())
         question_doc = {
             "_id": q_id,
@@ -313,11 +344,14 @@ async def bulk_upload_questions(
 
     await log_audit_action(
         current_user["email"], 
-        f"admin_bulk_upload_questions: {len(inserted_ids)} questions added", 
+        f"admin_bulk_upload_questions: {len(inserted_ids)} questions added, {skipped_count} duplicates skipped", 
         request, 
         current_user["device_id"]
     )
-    return {"message": f"Successfully uploaded {len(inserted_ids)} questions.", "ids": inserted_ids}
+    msg = f"Successfully uploaded {len(inserted_ids)} questions."
+    if skipped_count > 0:
+        msg += f" {skipped_count} duplicate questions were skipped."
+    return {"message": msg, "ids": inserted_ids}
 
 @router.put("/questions/{question_id}")
 async def update_question(
@@ -344,6 +378,16 @@ async def update_question(
     if payload.chapter is not None:
         update_data["chapter"] = payload.chapter
     if payload.question is not None:
+        q_text_stripped = payload.question.strip()
+        existing = await questions_col.find_one({
+            "question": {"$regex": f"^\s*{re.escape(q_text_stripped)}\s*$", "$options": "i"},
+            "_id": {"$ne": question_id}
+        })
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Another question with this exact text already exists in the database."
+            )
         update_data["question"] = payload.question
     if payload.options is not None:
         update_data["options"] = payload.options
