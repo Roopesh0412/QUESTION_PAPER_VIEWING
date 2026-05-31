@@ -421,7 +421,7 @@ export default function TeacherDashboard() {
 
           <div>
             <label className="block text-slate-500 dark:text-slate-400 text-xs font-bold mb-1.5 uppercase tracking-wider flex justify-between items-center">
-              <span>NCERT Class</span>
+              <span>Class</span>
               {selectedClass && (
                 <button 
                   onClick={toggleClassLock}
@@ -440,8 +440,8 @@ export default function TeacherDashboard() {
               className="block w-full px-3 py-2 bg-slate-55 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-brand-500 dark:text-white cursor-pointer disabled:bg-slate-100 dark:disabled:bg-slate-900 disabled:text-slate-500 disabled:cursor-not-allowed"
             >
               <option value="">Select Class (Unlocked)</option>
-              <option value="11th">Class 11th (NCERT)</option>
-              <option value="12th">Class 12th (NCERT)</option>
+              <option value="11th">Class 11th</option>
+              <option value="12th">Class 12th</option>
             </select>
           </div>
         </div>
@@ -618,7 +618,7 @@ export default function TeacherDashboard() {
             <HelpCircle className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
             <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">No Questions Found</h3>
             <p className="text-slate-500 text-sm mt-1 max-w-sm mx-auto">
-              Try adjusting your keyword query or choosing a different NCERT class/chapter filter combination.
+              Try adjusting your keyword query or choosing a different class/chapter filter combination.
             </p>
           </div>
         ) : (

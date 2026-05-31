@@ -880,7 +880,7 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1 flex justify-between items-center">
-                      <span>NCERT Class</span>
+                      <span>Class</span>
                       <button 
                         type="button"
                         onClick={() => setIsFormClassLocked(!isFormClassLocked)}
