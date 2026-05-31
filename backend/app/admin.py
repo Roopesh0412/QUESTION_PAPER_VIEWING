@@ -66,7 +66,7 @@ def normalize_question_data(data: dict) -> dict:
         normalized["class"] = "12th"
 
     normalized["exam_type"] = get_val(["exam_type", "examType", "exam"]) or "JEE"
-    if str(normalized["exam_type"]).upper() in ("JEE", "NEET"):
+    if str(normalized["exam_type"]).upper() in ("JEE", "NEET", "KCET"):
         normalized["exam_type"] = str(normalized["exam_type"]).upper()
 
     # Question Type

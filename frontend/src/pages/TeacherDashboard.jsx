@@ -535,6 +535,7 @@ export default function TeacherDashboard() {
               <option value="">All Exams</option>
               <option value="JEE">JEE</option>
               <option value="NEET">NEET</option>
+              <option value="KCET">KCET</option>
             </select>
           </div>
 
