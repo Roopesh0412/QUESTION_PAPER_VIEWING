@@ -684,16 +684,16 @@ export default function TeacherDashboard() {
                     <MathJaxRenderer content={q.question} className="inline-block" />
                   </div>
 
-                  {/* Main Question Image diagram */}
-                  {q.image_url && (
-                    <div className="my-4 max-w-lg overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800 shadow-inner bg-white">
+                  {/* Main Question Image diagrams (Multiple) */}
+                  {((q.image_urls && q.image_urls.length > 0) ? q.image_urls : (q.image_url ? [q.image_url] : [])).map((url, imgIdx) => (
+                    <div key={imgIdx} className="my-4 max-w-lg overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800 shadow-inner bg-white">
                       <img 
-                        src={q.image_url} 
-                        alt="Question diagram" 
+                        src={url} 
+                        alt={`Question diagram ${imgIdx + 1}`} 
                         className="max-h-80 w-auto object-contain mx-auto" 
                       />
                     </div>
-                  )}
+                  ))}
 
                   {/* MCQ Options with potential option images */}
                   {!isNumerical && q.options && q.options.length > 0 && (

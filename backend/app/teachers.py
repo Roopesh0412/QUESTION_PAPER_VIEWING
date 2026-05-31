@@ -216,6 +216,7 @@ async def get_subject_questions(
             "options": parse_jee_options(q.get("options")),
             "answer": q.get("answer", "A"),
             "image_url": q.get("image_url", ""),
+            "image_urls": q.get("image_urls") if isinstance(q.get("image_urls"), list) else ([q.get("image_url")] if q.get("image_url") else []),
             "class": q.get("class", "11th"),
             "exam_type": q.get("exam_type", "JEE"),
             "question_type": q.get("question_type", "Multiple Choice"),

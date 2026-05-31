@@ -133,6 +133,7 @@ export default function AdminDashboard() {
   const [qAnswer, setQAnswer] = useState('A');
   const [qNumericalAnswer, setQNumericalAnswer] = useState('');
   const [qImageUrl, setQImageUrl] = useState('');
+  const [qImageUrls, setQImageUrls] = useState([]);
   const [qDetailedSolution, setqDetailedSolution] = useState('');
   const [qSolutionImageUrl, setqSolutionImageUrl] = useState('');
 
@@ -189,6 +190,13 @@ export default function AdminDashboard() {
       }
     }
   }, [qFormClass, qSubject, qChapter]);
+
+  // Lock NEET questions to MCQ format
+  useEffect(() => {
+    if (qExamType === 'NEET') {
+      setQType('Multiple Choice');
+    }
+  }, [qExamType]);
 
   // Sync viewing filter chapters & concepts
   const fetchChaptersFromDB = useCallback(async (sub) => {
@@ -417,7 +425,8 @@ export default function AdminDashboard() {
       question: qText,
       options: isNumerical ? [] : qOptions,
       answer: isNumerical ? qNumericalAnswer : qAnswer,
-      image_url: qImageUrl || '',
+      image_url: qImageUrls[0] || '',
+      image_urls: qImageUrls,
       class: qFormClass,
       exam_type: qExamType,
       question_type: qType,
@@ -446,6 +455,7 @@ export default function AdminDashboard() {
       setQOptionImages(['', '', '', '']);
       setQNumericalAnswer('');
       setQImageUrl('');
+      setQImageUrls([]);
       setqDetailedSolution('');
       setqSolutionImageUrl('');
       
@@ -480,6 +490,7 @@ export default function AdminDashboard() {
     }
     
     setQImageUrl(q.image_url || '');
+    setQImageUrls(q.image_urls && q.image_urls.length > 0 ? q.image_urls : (q.image_url ? [q.image_url] : []));
     setqDetailedSolution(q.detailed_solution || '');
     setqSolutionImageUrl(q.solution_image_url || '');
 
@@ -496,6 +507,7 @@ export default function AdminDashboard() {
     setQOptionImages(['', '', '', '']);
     setQNumericalAnswer('');
     setQImageUrl('');
+    setQImageUrls([]);
     setqDetailedSolution('');
     setqSolutionImageUrl('');
   };
@@ -956,11 +968,14 @@ export default function AdminDashboard() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">Assessment Type</label>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">
+                      Assessment Type {qExamType === 'NEET' && <span className="text-[10px] text-brand-600 font-bold">(Locked)</span>}
+                    </label>
                     <select
                       value={qType}
+                      disabled={qExamType === 'NEET'}
                       onChange={(e) => setQType(e.target.value)}
-                      className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white"
+                      className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white disabled:opacity-75 disabled:cursor-not-allowed"
                     >
                       <option value="Multiple Choice">Multiple Choice (MCQ)</option>
                       <option value="Numerical">Numerical Assessment</option>
@@ -991,27 +1006,47 @@ export default function AdminDashboard() {
                     onChange={(e) => setQText(e.target.value)}
                     className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white font-mono"
                   />
+                  {qText && (
+                    <div className="mt-2 p-3 bg-slate-50 dark:bg-slate-950/40 rounded-lg border border-slate-200 dark:border-slate-800">
+                      <span className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Live Question Preview</span>
+                      <div className="text-sm dark:text-slate-200 font-bold leading-relaxed">
+                        <MathJaxRenderer content={qText} />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Main Question Image */}
+                {/* Question Images (Multiple Allowed) */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Question Image (Optional)</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Question Images (Multiple Allowed)</label>
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => handleFileChange(e.target.files[0], setQImageUrl)}
-                    className="w-full text-xs text-slate-500"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files);
+                      files.forEach(file => {
+                        handleFileChange(file, (base64) => {
+                          setQImageUrls(prev => [...prev, base64]);
+                        });
+                      });
+                    }}
+                    className="w-full text-xs text-slate-500 cursor-pointer"
                   />
-                  {qImageUrl && (
-                    <div className="mt-2 relative w-fit">
-                      <img src={qImageUrl} alt="Preview" className="max-h-24 rounded border" />
-                      <button 
-                        type="button" 
-                        onClick={() => setQImageUrl('')} 
-                        className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-0.5 text-[8px]"
-                      >
-                        ✕
-                      </button>
+                  {qImageUrls && qImageUrls.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {qImageUrls.map((url, imgIdx) => (
+                        <div key={imgIdx} className="relative w-fit">
+                          <img src={url} alt={`Preview ${imgIdx + 1}`} className="max-h-24 rounded border" />
+                          <button 
+                            type="button" 
+                            onClick={() => setQImageUrls(prev => prev.filter((_, idx) => idx !== imgIdx))} 
+                            className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-4.5 h-4.5 flex items-center justify-center text-[10px] shadow hover:bg-red-650"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -1060,6 +1095,13 @@ export default function AdminDashboard() {
                               Add Image
                             </button>
                           </div>
+
+                          {displayVal && (
+                            <div className="mt-1 ml-6 p-2 bg-white dark:bg-slate-950/45 rounded border border-slate-100 dark:border-slate-800 text-xs dark:text-slate-350">
+                              <span className="block text-[8px] text-slate-400 uppercase mb-0.5">Option {label} Live Preview</span>
+                              <MathJaxRenderer content={displayVal} />
+                            </div>
+                          )}
 
                           {qOptionImages[oIdx] && (
                             <div className="ml-5 mt-1.5 relative w-fit">
@@ -1123,6 +1165,12 @@ export default function AdminDashboard() {
                       onChange={(e) => setqDetailedSolution(e.target.value)}
                       className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white"
                     />
+                    {qDetailedSolution && (
+                      <div className="mt-1.5 p-2.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-150 dark:border-slate-800 text-xs dark:text-slate-350">
+                        <span className="block text-[8px] text-slate-400 uppercase mb-1">Solution Live Preview</span>
+                        <MathJaxRenderer content={qDetailedSolution} />
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -1461,15 +1509,15 @@ export default function AdminDashboard() {
                       <MathJaxRenderer content={q.question} />
                     </div>
 
-                    {q.image_url && (
-                      <div className="my-2.5 max-w-full overflow-hidden rounded border border-slate-200 bg-white">
+                    {((q.image_urls && q.image_urls.length > 0) ? q.image_urls : (q.image_url ? [q.image_url] : [])).map((url, imgIdx) => (
+                      <div key={imgIdx} className="my-2.5 max-w-full overflow-hidden rounded border border-slate-200 dark:border-slate-850 bg-white">
                         <img 
-                          src={q.image_url} 
-                          alt="Question diagram" 
+                          src={url} 
+                          alt={`Question diagram ${imgIdx + 1}`} 
                           className="max-h-24 w-auto object-contain mx-auto" 
                         />
                       </div>
-                    )}
+                    ))}
 
                     {/* Options list */}
                     {!isNum && q.options && q.options.length > 0 && (

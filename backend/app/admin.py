@@ -35,6 +35,11 @@ def normalize_question_data(data: dict) -> dict:
     normalized["question"] = get_val(["question"]) or ""
     normalized["answer"] = get_val(["answer"]) or "A"
     normalized["image_url"] = get_val(["image_url", "imageUrl"]) or ""
+    raw_image_urls = get_val(["image_urls", "imageUrls"])
+    if isinstance(raw_image_urls, list):
+        normalized["image_urls"] = [str(url) for url in raw_image_urls if url]
+    else:
+        normalized["image_urls"] = [normalized["image_url"]] if normalized["image_url"] else []
     
     # Options & option images
     raw_options = get_val(["options"]) or []
@@ -71,7 +76,9 @@ def normalize_question_data(data: dict) -> dict:
 
     # Question Type
     normalized["question_type"] = get_val(["question_type", "questionType", "assessment_type", "assessmentType"]) or "Multiple Choice"
-    if "num" in str(normalized["question_type"]).lower():
+    if normalized["exam_type"] == "NEET":
+        normalized["question_type"] = "Multiple Choice"
+    elif "num" in str(normalized["question_type"]).lower():
         normalized["question_type"] = "Numerical"
     else:
         normalized["question_type"] = "Multiple Choice"
@@ -248,6 +255,7 @@ async def create_question(
         "options": payload.options,
         "answer": payload.answer,
         "image_url": payload.image_url,
+        "image_urls": payload.image_urls if payload.image_urls else ([payload.image_url] if payload.image_url else []),
         "class": payload.class_level,
         "exam_type": payload.exam_type,
         "question_type": payload.question_type,
@@ -290,6 +298,7 @@ async def bulk_upload_questions(
             "options": normalized["options"],
             "answer": normalized["answer"],
             "image_url": normalized["image_url"],
+            "image_urls": normalized["image_urls"],
             "class": normalized["class"],
             "exam_type": normalized["exam_type"],
             "question_type": normalized["question_type"],
@@ -342,6 +351,8 @@ async def update_question(
         update_data["answer"] = payload.answer
     if payload.image_url is not None:
         update_data["image_url"] = payload.image_url
+    if payload.image_urls is not None:
+        update_data["image_urls"] = payload.image_urls
     if payload.class_level is not None:
         update_data["class"] = payload.class_level
     if payload.exam_type is not None:

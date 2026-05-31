@@ -52,6 +52,7 @@ class QuestionBase(BaseModel):
     options: List[str]
     answer: str
     image_url: Optional[str] = ""
+    image_urls: Optional[List[str]] = Field(default_factory=list)
     class_level: Optional[str] = Field(default="11th", alias="class")
     exam_type: Optional[str] = "JEE"
     question_type: Optional[str] = "Multiple Choice"
@@ -71,6 +72,7 @@ class QuestionUpdate(BaseModel):
     options: Optional[List[str]] = None
     answer: Optional[str] = None
     image_url: Optional[str] = None
+    image_urls: Optional[List[str]] = None
     class_level: Optional[str] = Field(default=None, alias="class")
     exam_type: Optional[str] = None
     question_type: Optional[str] = None
