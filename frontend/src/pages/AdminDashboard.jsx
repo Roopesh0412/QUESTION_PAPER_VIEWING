@@ -78,6 +78,17 @@ const ncertSyllabus = {
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('teachers');
+
+  // Check if logged in user is manchestertechnologiess@gmail.com
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  const isMantech = user && user.email.toLowerCase() === 'manchestertechnologiess@gmail.com';
+
+  useEffect(() => {
+    if (activeTab === 'questions' && !isMantech) {
+      setActiveTab('teachers');
+    }
+  }, [activeTab, isMantech]);
   
   // Teachers state
   const [teachers, setTeachers] = useState([]);
@@ -630,17 +641,19 @@ export default function AdminDashboard() {
           <Users className="w-4 h-4" />
           <span>Teachers CRUD</span>
         </button>
-        <button
-          onClick={() => setActiveTab('questions')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-            activeTab === 'questions' 
-              ? 'bg-brand-600 text-white shadow-md' 
-              : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-850'
-          }`}
-        >
-          <HelpCircle className="w-4 h-4" />
-          <span>Questions Panel</span>
-        </button>
+        {isMantech && (
+          <button
+            onClick={() => setActiveTab('questions')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+              activeTab === 'questions' 
+                ? 'bg-brand-600 text-white shadow-md' 
+                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-850'
+            }`}
+          >
+            <HelpCircle className="w-4 h-4" />
+            <span>Questions Panel</span>
+          </button>
+        )}
         <button
           onClick={() => setActiveTab('sessions')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
