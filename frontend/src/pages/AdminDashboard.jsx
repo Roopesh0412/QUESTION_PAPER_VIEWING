@@ -500,12 +500,43 @@ export default function AdminDashboard() {
     setqSolutionImageUrl('');
   };
 
+  const escapeJsonBackslashes = (jsonStr) => {
+    let result = '';
+    let inString = false;
+    for (let i = 0; i < jsonStr.length; i++) {
+      const char = jsonStr[i];
+      if (inString) {
+        if (char === '\\') {
+          const nextChar = jsonStr[i + 1];
+          if (nextChar === '"') {
+            result += '\\"';
+            i++;
+          } else {
+            result += '\\\\';
+          }
+        } else if (char === '"') {
+          result += char;
+          inString = false;
+        } else {
+          result += char;
+        }
+      } else {
+        if (char === '"') {
+          inString = true;
+        }
+        result += char;
+      }
+    }
+    return result;
+  };
+
   const handleBulkUpload = async (e) => {
     e.preventDefault();
     setQMsg('');
     setQErr('');
     try {
-      const parsed = JSON.parse(bulkJson);
+      const escapedJson = escapeJsonBackslashes(bulkJson);
+      const parsed = JSON.parse(escapedJson);
       const payload = Array.isArray(parsed) ? parsed : [parsed];
       
       const res = await api.post('/admin/questions/bulk', payload);
