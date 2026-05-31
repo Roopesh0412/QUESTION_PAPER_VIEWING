@@ -52,6 +52,14 @@ class QuestionBase(BaseModel):
     options: List[str]
     answer: str
     image_url: Optional[str] = ""
+    class_level: Optional[str] = Field(default="11th", alias="class")
+    exam_type: Optional[str] = "JEE"
+    question_type: Optional[str] = "Multiple Choice"
+    difficulty_level: Optional[str] = "Medium"
+    concept: Optional[str] = ""
+    detailed_solution: Optional[str] = ""
+    solution_image_url: Optional[str] = ""
+    option_images: Optional[List[str]] = Field(default_factory=lambda: ["", "", "", ""])
 
 class QuestionCreate(QuestionBase):
     pass
@@ -63,6 +71,14 @@ class QuestionUpdate(BaseModel):
     options: Optional[List[str]] = None
     answer: Optional[str] = None
     image_url: Optional[str] = None
+    class_level: Optional[str] = Field(default=None, alias="class")
+    exam_type: Optional[str] = None
+    question_type: Optional[str] = None
+    difficulty_level: Optional[str] = None
+    concept: Optional[str] = None
+    detailed_solution: Optional[str] = None
+    solution_image_url: Optional[str] = None
+    option_images: Optional[List[str]] = None
 
 class QuestionResponse(QuestionBase):
     id: str = Field(alias="_id")

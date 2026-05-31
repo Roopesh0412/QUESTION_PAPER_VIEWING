@@ -15,6 +15,87 @@ router = APIRouter(prefix="/admin", tags=["Admin Panel"])
 # Ensure only users with "admin" role can access the Admin Panel endpoints
 admin_auth = require_role(["admin"])
 
+def normalize_question_data(data: dict) -> dict:
+    normalized = {}
+    
+    # Helper to get value ignoring case and spaces/underscores
+    def get_val(keys):
+        for k in keys:
+            if k in data:
+                return data[k]
+            k_norm = k.lower().replace(" ", "").replace("_", "")
+            for dk in data:
+                dk_norm = str(dk).lower().replace(" ", "").replace("_", "")
+                if dk_norm == k_norm:
+                    return data[dk]
+        return None
+
+    normalized["subject"] = get_val(["subject"]) or "Physics"
+    normalized["chapter"] = get_val(["chapter"]) or "General"
+    normalized["question"] = get_val(["question"]) or ""
+    normalized["answer"] = get_val(["answer"]) or "A"
+    normalized["image_url"] = get_val(["image_url", "imageUrl"]) or ""
+    
+    # Options & option images
+    raw_options = get_val(["options"]) or []
+    parsed_options = []
+    parsed_option_images = ["", "", "", ""]
+    if isinstance(raw_options, list):
+        for i, opt in enumerate(raw_options):
+            label = chr(65 + i)
+            if isinstance(opt, dict):
+                text = opt.get("text", "")
+                img = opt.get("image_url", opt.get("imageUrl", ""))
+                if not str(text).startswith(f"{label}. "):
+                    text = f"{label}. {text}"
+                parsed_options.append(text)
+                if i < 4:
+                    parsed_option_images[i] = img
+            else:
+                text = str(opt)
+                if not text.startswith(f"{label}. "):
+                    text = f"{label}. {text}"
+                parsed_options.append(text)
+    normalized["options"] = parsed_options
+
+    # Extra tags
+    normalized["class"] = str(get_val(["class", "class_level", "classLevel"]) or "11th")
+    if "11" in normalized["class"]:
+        normalized["class"] = "11th"
+    elif "12" in normalized["class"]:
+        normalized["class"] = "12th"
+
+    normalized["exam_type"] = get_val(["exam_type", "examType", "exam"]) or "JEE"
+    if str(normalized["exam_type"]).upper() in ("JEE", "NEET"):
+        normalized["exam_type"] = str(normalized["exam_type"]).upper()
+
+    # Question Type
+    normalized["question_type"] = get_val(["question_type", "questionType", "assessment_type", "assessmentType"]) or "Multiple Choice"
+    if "num" in str(normalized["question_type"]).lower():
+        normalized["question_type"] = "Numerical"
+    else:
+        normalized["question_type"] = "Multiple Choice"
+
+    # Difficulty Level
+    normalized["difficulty_level"] = get_val(["difficulty_level", "difficultyLevel", "difficulty"]) or "Medium"
+    normalized["difficulty_level"] = str(normalized["difficulty_level"]).capitalize()
+    if normalized["difficulty_level"] not in ("Easy", "Medium", "Hard"):
+        normalized["difficulty_level"] = "Medium"
+
+    normalized["concept"] = get_val(["concept"]) or ""
+    normalized["detailed_solution"] = get_val(["detailed_solution", "detailedSolution", "solution"]) or ""
+    normalized["solution_image_url"] = get_val(["solution_image_url", "solutionImageUrl", "solution_image"]) or ""
+    
+    # option_images list
+    opt_imgs = get_val(["option_images", "optionImages"])
+    if isinstance(opt_imgs, list):
+        for i in range(min(len(opt_imgs), 4)):
+            if opt_imgs[i]:
+                parsed_option_images[i] = opt_imgs[i]
+    normalized["option_images"] = parsed_option_images
+
+    return normalized
+
 # ==========================================
 # TEACHER MANAGEMENT (CRUD)
 # ==========================================
@@ -166,7 +247,15 @@ async def create_question(
         "question": payload.question,
         "options": payload.options,
         "answer": payload.answer,
-        "image_url": payload.image_url
+        "image_url": payload.image_url,
+        "class": payload.class_level,
+        "exam_type": payload.exam_type,
+        "question_type": payload.question_type,
+        "difficulty_level": payload.difficulty_level,
+        "concept": payload.concept,
+        "detailed_solution": payload.detailed_solution,
+        "solution_image_url": payload.solution_image_url,
+        "option_images": payload.option_images
     }
     await questions_col.insert_one(question_doc)
     await log_audit_action(current_user["email"], f"admin_create_question: {question_id}", request, current_user["device_id"])
@@ -174,7 +263,7 @@ async def create_question(
 
 @router.post("/questions/bulk")
 async def bulk_upload_questions(
-    payload: List[QuestionCreate],
+    payload: List[Dict[str, Any]],
     request: Request,
     current_user: dict = Depends(admin_auth)
 ):
@@ -190,16 +279,25 @@ async def bulk_upload_questions(
         )
 
     inserted_ids = []
-    for q in payload:
+    for raw_q in payload:
+        normalized = normalize_question_data(raw_q)
         q_id = str(uuid.uuid4())
         question_doc = {
             "_id": q_id,
-            "subject": q.subject,
-            "chapter": q.chapter,
-            "question": q.question,
-            "options": q.options,
-            "answer": q.answer,
-            "image_url": q.image_url
+            "subject": normalized["subject"],
+            "chapter": normalized["chapter"],
+            "question": normalized["question"],
+            "options": normalized["options"],
+            "answer": normalized["answer"],
+            "image_url": normalized["image_url"],
+            "class": normalized["class"],
+            "exam_type": normalized["exam_type"],
+            "question_type": normalized["question_type"],
+            "difficulty_level": normalized["difficulty_level"],
+            "concept": normalized["concept"],
+            "detailed_solution": normalized["detailed_solution"],
+            "solution_image_url": normalized["solution_image_url"],
+            "option_images": normalized["option_images"]
         }
         await questions_col.insert_one(question_doc)
         inserted_ids.append(q_id)
@@ -244,6 +342,22 @@ async def update_question(
         update_data["answer"] = payload.answer
     if payload.image_url is not None:
         update_data["image_url"] = payload.image_url
+    if payload.class_level is not None:
+        update_data["class"] = payload.class_level
+    if payload.exam_type is not None:
+        update_data["exam_type"] = payload.exam_type
+    if payload.question_type is not None:
+        update_data["question_type"] = payload.question_type
+    if payload.difficulty_level is not None:
+        update_data["difficulty_level"] = payload.difficulty_level
+    if payload.concept is not None:
+        update_data["concept"] = payload.concept
+    if payload.detailed_solution is not None:
+        update_data["detailed_solution"] = payload.detailed_solution
+    if payload.solution_image_url is not None:
+        update_data["solution_image_url"] = payload.solution_image_url
+    if payload.option_images is not None:
+        update_data["option_images"] = payload.option_images
 
     if update_data:
         await questions_col.update_one({"_id": question_id}, {"$set": update_data})

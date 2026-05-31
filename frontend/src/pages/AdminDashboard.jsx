@@ -1,10 +1,80 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   Users, HelpCircle, HardDrive, FileText, Plus, Trash2, 
-  ToggleLeft, ToggleRight, Upload, LogOut, Search, AlertCircle 
+  ToggleLeft, ToggleRight, Upload, LogOut, Search, AlertCircle, Edit, Lock, Unlock, RefreshCcw
 } from 'lucide-react';
 import api from '../api';
 import MathJaxRenderer from '../components/MathJaxRenderer';
+
+// Official NCERT syllabus mapping for Class 11 and 12
+const ncertSyllabus = {
+  "11th": {
+    "Physics": {
+      "Units and Measurements": ["SI Units", "Dimensional Analysis", "Errors in Measurement"],
+      "Motion in a Straight Line": ["Position, Path Length and Displacement", "Average Velocity and Average Speed", "Instantaneous Velocity and Speed", "Acceleration"],
+      "Motion in a Plane": ["Scalars and Vectors", "Resolution of Vectors", "Vector Addition", "Projectile Motion", "Uniform Circular Motion"],
+      "Laws of Motion": ["Newton's First Law", "Newton's Second Law", "Newton's Third Law", "Conservation of Momentum", "Friction", "Circular Motion"],
+      "Work, Energy and Power": ["Work-Energy Theorem", "Kinetic Energy", "Work done by a Variable Force", "Potential Energy", "Conservation of Mechanical Energy", "Power", "Collisions"],
+      "System of Particles and Rotational Motion": ["Center of Mass", "Linear Momentum of a System of Particles", "Vector Product of Two Vectors", "Angular Velocity", "Torque and Angular Momentum", "Equilibrium of a Rigid Body", "Moment of Inertia"],
+      "Gravitation": ["Kepler's Laws", "Universal Law of Gravitation", "Acceleration due to Gravity", "Gravitational Potential Energy", "Escape Speed", "Earth Satellites"],
+      "Mechanical Properties of Solids": ["Elastic Behaviour", "Stress and Strain", "Hooke's Law", "Elastic Moduli"],
+      "Mechanical Properties of Fluids": ["Pressure", "Streamline Flow", "Bernoulli's Principle", "Viscosity", "Surface Tension"],
+      "Thermal Properties of Matter": ["Temperature and Heat", "Thermal Expansion", "Specific Heat Capacity", "Calorimetry", "Latent Heat", "Heat Transfer"],
+      "Thermodynamics": ["Thermal Equilibrium", "Zeroth Law of Thermodynamics", "First Law of Thermodynamics", "Thermodynamic Processes", "Heat Engines and Refrigerators", "Second Law of Thermodynamics"],
+      "Kinetic Theory": ["Molecular Nature of Matter", "Behaviour of Gases", "Law of Equipartition of Energy", "Specific Heat Capacity", "Mean Free Path"],
+      "Oscillations": ["Periodic and Oscillatory Motions", "Simple Harmonic Motion", "Damped Simple Harmonic Motion", "Forced Oscillations and Resonance"],
+      "Waves": ["Transverse and Longitudinal Waves", "Displacement Relation in a Progressive Wave", "Speed of a Travelling Wave", "Principle of Superposition of Waves", "Beats", "Doppler Effect"]
+    },
+    "Chemistry": {
+      "Some Basic Concepts of Chemistry": ["Properties of Matter", "Laws of Chemical Combination", "Dalton's Atomic Theory", "Atomic and Molecular Masses", "Mole Concept", "Stoichiometry"],
+      "Structure of Atom": ["Sub-atomic Particles", "Bohr's Model for Hydrogen Atom", "Quantum Mechanical Model of Atom", "Electronic Configurations"],
+      "Classification of Elements and Periodicity in Properties": ["Modern Periodic Law", "Periodic Trends in Properties of Elements"],
+      "Chemical Bonding and Molecular Structure": ["Kossel-Lewis Approach", "Ionic Bonding", "Covalent Bonding", "VSEPR Theory", "Valence Bond Theory", "Hybridisation", "Molecular Orbital Theory"],
+      "Thermodynamics": ["Thermodynamic Terms", "Applications", "Enthalpy Change", "Spontaneity", "Gibbs Energy Change and Equilibrium"],
+      "Equilibrium": ["Equilibrium in Physical Processes", "Equilibrium in Chemical Processes", "Law of Chemical Equilibrium", "Homogeneous & Heterogeneous Equilibria", "Ionic Equilibrium", "Buffer Solutions", "Solubility Product"],
+      "Redox Reactions": ["Classical Idea of Redox", "Oxidation Number", "Balancing Redox Reactions"],
+      "Organic Chemistry – Some Basic Principles and Techniques": ["General Introduction", "Tetravalence of Carbon", "Structural Representations", "Classification & Nomenclature", "Isomerism", "Fundamental Concepts in Organic Reaction Mechanisms", "Purification of Organic Compounds"],
+      "Hydrocarbons": ["Alkanes", "Alkenes", "Alkynes", "Aromatic Hydrocarbons"]
+    },
+    "Mathematics": {
+      "Sets": ["Sets and their Representations", "The Empty Set", "Finite and Infinite Sets", "Equal Sets", "Subsets", "Power Set", "Universal Set", "Venn Diagrams", "Operations on Sets"],
+      "Relations and Functions": ["Cartesian Product of Sets", "Relations", "Functions"],
+      "Trigonometric Functions": ["Angles", "Trigonometric Functions", "Trigonometric Equations"],
+      "Complex Numbers and Quadratic Equations": ["Complex Numbers", "Algebra of Complex Numbers", "Argand Plane and Polar Representation", "Quadratic Equations"],
+      "Linear Inequalities": ["Inequalities", "Algebraic Solutions of Linear Inequalities", "Graphical Solution"],
+      "Permutations and Combinations": ["Fundamental Principle of Counting", "Permutations", "Combinations"],
+      "Binomial Theorem": ["Binomial Theorem for Positive Integral Indices", "General and Middle Terms"],
+      "Sequences and Series": ["Sequences", "Series", "Arithmetic Progression (AP)", "Geometric Progression (GP)", "Relationship between AM and GM"],
+      "Straight Lines": ["Slope of a Line", "Various Forms of the Equation of a Line", "Distance of a Point From a Line"],
+      "Conic Sections": ["Sections of a Cone", "Circle", "Parabola", "Ellipse", "Hyperbola"],
+      "Introduction to Three-Dimensional Geometry": ["Coordinate Axes and Coordinate Planes", "Coordinates of a Point in Space", "Distance between Two Points", "Section Formula"],
+      "Limits and Derivatives": ["Limits", "Intuitive Idea of Derivatives", "Limits of Trigonometric Functions", "Derivatives"],
+      "Statistics": ["Measures of Dispersion", "Range", "Mean Deviation", "Variance and Standard Deviation", "Analysis of Frequency Distributions"],
+      "Probability": ["Random Experiments", "Event", "Axiomatic Approach to Probability"]
+    },
+    "Biology": {
+      "The Living World": ["What is Living?", "Diversity in the Living World", "Taxonomic Categories", "Taxonomical Aids"],
+      "Biological Classification": ["Kingdom Monera", "Kingdom Protista", "Kingdom Fungi", "Kingdom Plantae", "Kingdom Animalia", "Viruses, Viroids and Lichens"],
+      "Plant Kingdom": ["Algae", "Bryophytes", "Pteridophytes", "Gymnosperms", "Angiosperms", "Plant Life Cycles"],
+      "Animal Kingdom": ["Basis of Classification", "Classification of Animals"],
+      "Morphology of Flowering Plants": ["The Root", "The Stem", "The Leaf", "The Inflorescence", "The Flower", "The Fruit", "The Seed", "Semi-technical Description of a Flowering Plant"],
+      "Anatomy of Flowering Plants": ["The Tissues", "The Tissue System", "Anatomy of Dicotyledonous and Monocotonous Plants", "Secondary Growth"],
+      "Structural Organisation in Animals": ["Animal Tissues", "Organ and Organ System", "Earthworm", "Cockroach", "Frogs"],
+      "Cell: The Unit of Life": ["What is a Cell?", "Cell Theory", "An Overview of Cell", "Prokaryotic Cells", "Eukaryotic Cells"],
+      "Biomolecules": ["How to Analyse Chemical Composition?", "Primary and Secondary Metabolites", "Biomacromolecules", "Proteins", "Polysaccharides", "Nucleic Acids", "Structure of Proteins", "Nature of Bond Linking Monomers in a Polymer", "Dynamic State of Body Constituents", "Concept of Metabolism", "Metabolic Basis for Living", "The Living State", "Enzymes"],
+      "Cell Cycle and Cell Division": ["Cell Cycle", "M Phase", "Significance of Mitosis", "Meiosis", "Significance of Meiosis"],
+      "Photosynthesis in Higher Plants": ["What do we know?", "Early Experiments", "Where does Photosynthesis take place?", "How many Pigments are involved in Photosynthesis?", "What is Light Reaction?", "The Electron Transport", "Where are the ATP and NADPH Used?", "The C4 Pathway", "Photorespiration", "Factors affecting Photosynthesis"],
+      "Respiration in Plants": ["Do Plants Breathe?", "Glycolysis", "Fermentation", "Aerobic Respiration", "The Respiratory Balance Sheet", "Amphibolic Pathway", "Respiratory Quotient"],
+      "Plant Growth and Development": ["Growth", "Differentiation, Dedifferentiation and Redifferentiation", "Development", "Plant Growth Regulators", "Photoperiodism", "Vernalisation"],
+      "Breathing and Exchange of Gases": ["Respiratory Organs", "Mechanism of Breathing", "Exchange of Gases", "Transport of Gases", "Regulation of Respiration", "Disorders of Respiratory System"],
+      "Body Fluids and Circulation": ["Blood", "Lymph (Tissue Fluid)", "Circulatory Pathways", "Double Circulation", "Regulation of Cardiac Activity", "Disorders of Circulatory System"],
+      "Excretory Products and their Elimination": ["Human Excretory System", "Urine Formation", "Function of the Tubules", "Mechanism of Concentration of the Filtrate", "Regulation of Kidney Function", "Micturition", "Role of other Organs in Excretion", "Disorders of the Excretory System"],
+      "Locomotion and Movement": ["Types of Movement", "Muscle", "Skeletal System", "Joints", "Disorders of Muscular and Skeletal System"],
+      "Neural Control and Coordination": ["Neural System", "Human Neural System", "Neuron as Structural and Functional Unit of Neural System", "Central Neural System", "Reflex Action and Reflex Arc", "Sensory Reception and Processing"],
+      "Chemical Coordination and Integration": ["Endocrine Glands and Hormones", "Human Endocrine System", "Hormones of Heart, Kidney and Gastrointestinal Tract", "Mechanism of Hormone Action"]
+    }
+  }
+};
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('teachers');
@@ -17,22 +87,57 @@ export default function AdminDashboard() {
   const [teacherMsg, setTeacherMsg] = useState('');
   const [teacherErr, setTeacherErr] = useState('');
 
-  // Questions state
+  // Questions Panel list states
   const [questions, setQuestions] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [qPage, setQPage] = useState(1);
+  const [qPages, setQPages] = useState(1);
+  const [qLimit] = useState(10);
+  const [qSearch, setQSearch] = useState('');
+  
+  // Tag Filters in Question Bank
+  const [qFilterSubject, setQFilterSubject] = useState('');
+  const [selectedQClass, setSelectedQClass] = useState('');
+  const [isQClassLocked, setIsQClassLocked] = useState(false);
+  const [qFilterChapter, setqFilterChapter] = useState('');
+  const [qFilterConcept, setqFilterConcept] = useState('');
+  const [qFilterExam, setqFilterExam] = useState('');
+  const [qFilterType, setqFilterType] = useState('');
+  const [qFilterDifficulty, setqFilterDifficulty] = useState('');
+  const [selectedQIds, setSelectedQIds] = useState([]);
+  
+  // Create / Edit Question Form states
+  const [editingQId, setEditingQId] = useState(null); // Tracks active edit question
+  const [qFormClass, setqFormClass] = useState('11th');
+  const [isFormClassLocked, setIsFormClassLocked] = useState(true);
   const [qSubject, setQSubject] = useState('Physics');
   const [qChapter, setQChapter] = useState('');
+  const [qConcept, setQConcept] = useState('');
   const [qText, setQText] = useState('');
+  const [qExamType, setQExamType] = useState('JEE');
+  const [qType, setQType] = useState('Multiple Choice'); // MCQ or Numerical
+  const [qDifficulty, setQDifficulty] = useState('Medium');
   const [qOptions, setQOptions] = useState(['', '', '', '']);
+  const [qOptionImages, setQOptionImages] = useState(['', '', '', '']);
   const [qAnswer, setQAnswer] = useState('A');
+  const [qNumericalAnswer, setQNumericalAnswer] = useState('');
   const [qImageUrl, setQImageUrl] = useState('');
+  const [qDetailedSolution, setqDetailedSolution] = useState('');
+  const [qSolutionImageUrl, setqSolutionImageUrl] = useState('');
+
+  // Chapter & Concept lists for Create Form and Viewing Filters
+  const [formChapters, setFormChapters] = useState([]);
+  const [formConcepts, setFormConcepts] = useState([]);
+  const [filterChapters, setFilterChapters] = useState([]);
+  const [filterConcepts, setFilterConcepts] = useState([]);
+  const [filterConceptCounts, setFilterConceptCounts] = useState({});
+  const [activeConceptInfo, setActiveConceptInfo] = useState(null);
+
+  // Bulk JSON state
   const [bulkJson, setBulkJson] = useState('');
   const [qMsg, setQMsg] = useState('');
   const [qErr, setQErr] = useState('');
-  const [qSearch, setQSearch] = useState('');
-  const [qPage, setQPage] = useState(1);
-  const [qPages, setQPages] = useState(1);
-  const [qFilterSubject, setQFilterSubject] = useState('');
-  const [selectedQIds, setSelectedQIds] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   // Sessions state
   const [sessions, setSessions] = useState([]);
@@ -44,6 +149,90 @@ export default function AdminDashboard() {
   const [logAction, setLogAction] = useState('');
 
   const subjectsList = ['Physics', 'Chemistry', 'Mathematics', 'Biology'];
+  const loaderRef = useRef(null);
+  const formRef = useRef(null);
+
+  // ----------------------------------------------------
+  // Sync NCERT mappings for Form and Filters
+  // ----------------------------------------------------
+  // Sync form chapters & concepts
+  useEffect(() => {
+    if (qFormClass && qSubject) {
+      const classData = ncertSyllabus[qFormClass]?.[qSubject] || {};
+      const chaps = Object.keys(classData);
+      setFormChapters(chaps);
+      
+      // Auto pre-populate first chapter if none active
+      if (chaps.length > 0 && !chaps.includes(qChapter)) {
+        setQChapter(chaps[0]);
+      }
+    }
+  }, [qFormClass, qSubject]);
+
+  useEffect(() => {
+    if (qFormClass && qSubject && qChapter) {
+      const conceptsList = ncertSyllabus[qFormClass]?.[qSubject]?.[qChapter] || [];
+      setFormConcepts(conceptsList);
+      if (conceptsList.length > 0 && !conceptsList.includes(qConcept)) {
+        setQConcept(conceptsList[0]);
+      }
+    }
+  }, [qFormClass, qSubject, qChapter]);
+
+  // Sync viewing filter chapters & concepts
+  const fetchChaptersFromDB = useCallback(async (sub) => {
+    if (!sub) return;
+    try {
+      const res = await api.get('/teachers/chapters', { params: { subject: sub } });
+      setFilterChapters(res.data.chapters);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  useEffect(() => {
+    const sub = qFilterSubject || 'Physics';
+    if (selectedQClass) {
+      const classData = ncertSyllabus[selectedQClass]?.[sub] || {};
+      setFilterChapters(Object.keys(classData));
+      
+      if (qFilterChapter && classData[qFilterChapter]) {
+        setFilterConcepts(classData[qFilterChapter]);
+      } else {
+        setFilterConcepts([]);
+        setqFilterConcept('');
+      }
+    } else {
+      fetchChaptersFromDB(sub);
+      setFilterConcepts([]);
+      setqFilterConcept('');
+    }
+  }, [selectedQClass, qFilterSubject, qFilterChapter, fetchChaptersFromDB]);
+
+  // Load concept question counts for filter view
+  useEffect(() => {
+    const loadConceptCounts = async () => {
+      const sub = qFilterSubject || 'Physics';
+      if (!qFilterChapter) {
+        setFilterConceptCounts({});
+        return;
+      }
+      try {
+        const res = await api.get('/teachers/concepts-count', {
+          params: { subject: sub, chapter: qFilterChapter }
+        });
+        const counts = {};
+        res.data.concepts.forEach(c => {
+          counts[c.concept] = c.count;
+        });
+        setFilterConceptCounts(counts);
+      } catch (err) {
+        console.error('Error fetching concept counts:', err);
+      }
+    };
+    loadConceptCounts();
+  }, [qFilterSubject, qFilterChapter]);
+
 
   // ----------------------------------------------------
   // API Calls - Teachers
@@ -82,7 +271,6 @@ export default function AdminDashboard() {
         is_active: !currentStatus
       });
       fetchTeachers();
-      // If active sessions view is open, refresh that too since deactivation logs them out
       if (activeTab === 'sessions') fetchSessions();
     } catch (err) {
       console.error(err);
@@ -100,107 +288,205 @@ export default function AdminDashboard() {
   };
 
   // ----------------------------------------------------
-  // API Calls - Questions
+  // API Calls - Questions Panel (CRUD)
   // ----------------------------------------------------
-  const fetchQuestions = async () => {
+  const fetchQuestions = useCallback(async (pageToFetch) => {
+    setLoading(true);
+    setQErr('');
     try {
       const res = await api.get('/teachers/questions', {
         params: {
-          subject: qFilterSubject,
-          search: qSearch,
-          page: qPage,
-          limit: 6
+          subject: qFilterSubject || undefined,
+          chapter: qFilterChapter || undefined,
+          search: qSearch || undefined,
+          class: selectedQClass || undefined,
+          exam_type: qFilterExam || undefined,
+          question_type: qFilterType || undefined,
+          difficulty_level: qFilterDifficulty || undefined,
+          concept: qFilterConcept || undefined,
+          page: pageToFetch,
+          limit: qLimit
         }
       });
-      setQuestions(res.data.questions);
+      
+      if (pageToFetch === 1) {
+        setQuestions(res.data.questions);
+      } else {
+        setQuestions(prev => {
+          const ids = new Set(prev.map(q => q._id));
+          const uniq = res.data.questions.filter(q => !ids.has(q._id));
+          return [...prev, ...uniq];
+        });
+      }
+      setTotal(res.data.total);
       setQPages(res.data.pages);
     } catch (err) {
       console.error(err);
+      setQErr('Failed to retrieve question library.');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [qFilterSubject, qFilterChapter, qSearch, selectedQClass, qFilterExam, qFilterType, qFilterDifficulty, qFilterConcept, qLimit]);
 
-  const [isDragActive, setIsDragActive] = useState(false);
-  const [imageInputMode, setImageInputMode] = useState('upload'); // 'upload' or 'url'
+  // Infinite Scroll Observer for Admin Dashboard Question List
+  useEffect(() => {
+    if (activeTab !== 'questions' || loading) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && qPage < qPages) {
+        setQPage(prev => prev + 1);
+      }
+    }, { threshold: 0.1 });
+    
+    if (loaderRef.current) {
+      observer.observe(loaderRef.current);
+    }
+    return () => {
+      if (loaderRef.current) observer.unobserve(loaderRef.current);
+    };
+  }, [loading, qPage, qPages, activeTab]);
 
-  const handleImageFile = (file) => {
+  // Sync Page 1 loading on viewing filters change
+  useEffect(() => {
+    if (activeTab === 'questions') {
+      setSelectedQIds([]);
+      setQPage(1);
+      fetchQuestions(1);
+    }
+  }, [qFilterSubject, qFilterChapter, qSearch, selectedQClass, qFilterExam, qFilterType, qFilterDifficulty, qFilterConcept, activeTab, fetchQuestions]);
+
+  // Sync Next Page queries
+  useEffect(() => {
+    if (activeTab === 'questions' && qPage > 1) {
+      fetchQuestions(qPage);
+    }
+  }, [qPage, activeTab, fetchQuestions]);
+
+
+  // Helper file uploader reading base64 data url
+  const handleFileChange = (file, callback) => {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       setQErr('Only image files are allowed.');
       return;
     }
-    // Limit file size to 3MB
     if (file.size > 3 * 1024 * 1024) {
       setQErr('Image size should be less than 3MB.');
       return;
     }
-
     const reader = new FileReader();
     reader.onload = (e) => {
-      setQImageUrl(e.target.result); // Base64 data URL
+      callback(e.target.result);
     };
     reader.readAsDataURL(file);
   };
 
-  const handlePasteImage = (e) => {
-    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-    for (const item of items) {
-      if (item.kind === 'file' && item.type.startsWith('image/')) {
-        const file = item.getAsFile();
-        handleImageFile(file);
-        e.preventDefault();
-        break;
-      }
-    }
-  };
-
-  const handleDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setIsDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setIsDragActive(false);
-    }
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleImageFile(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleAddQuestion = async (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
     setQMsg('');
     setQErr('');
+
+    const isNumerical = qType === 'Numerical';
     
-    // Validate options are filled
-    if (qOptions.some(opt => !opt.trim())) {
-      setQErr('All four option fields are required.');
-      return;
+    // Validations
+    if (!isNumerical) {
+      if (qOptions.some(opt => !opt.trim())) {
+        setQErr('All four option fields are required for MCQs.');
+        return;
+      }
+    } else {
+      if (!qNumericalAnswer.trim()) {
+        setQErr('A numerical answer is required.');
+        return;
+      }
     }
 
+    const payload = {
+      subject: qSubject,
+      chapter: qChapter,
+      question: qText,
+      options: isNumerical ? [] : qOptions,
+      answer: isNumerical ? qNumericalAnswer : qAnswer,
+      image_url: qImageUrl || '',
+      class: qFormClass,
+      exam_type: qExamType,
+      question_type: qType,
+      difficulty_level: qDifficulty,
+      concept: qConcept || '',
+      detailed_solution: qDetailedSolution || '',
+      solution_image_url: qSolutionImageUrl || '',
+      option_images: isNumerical ? ['', '', '', ''] : qOptionImages
+    };
+
     try {
-      await api.post('/admin/questions', {
-        subject: qSubject,
-        chapter: qChapter,
-        question: qText,
-        options: qOptions,
-        answer: qAnswer,
-        image_url: qImageUrl
-      });
-      setQMsg('Question added successfully.');
-      setQChapter('');
+      if (editingQId) {
+        // Edit payload using PUT
+        await api.put(`/admin/questions/${editingQId}`, payload);
+        setQMsg('Question updated successfully.');
+        setEditingQId(null);
+      } else {
+        // Create payload using POST
+        await api.post('/admin/questions', payload);
+        setQMsg('Question created successfully.');
+      }
+      
+      // Clean form fields
       setQText('');
       setQOptions(['', '', '', '']);
+      setQOptionImages(['', '', '', '']);
+      setQNumericalAnswer('');
       setQImageUrl('');
-      fetchQuestions();
+      setqDetailedSolution('');
+      setqSolutionImageUrl('');
+      
+      setQPage(1);
+      fetchQuestions(1);
     } catch (err) {
-      setQErr(err.response?.data?.detail || 'Failed to add question.');
+      setQErr(err.response?.data?.detail || 'Failed to submit question.');
     }
+  };
+
+  const startEditQuestion = (q) => {
+    setEditingQId(q._id);
+    setqFormClass(q.class || '11th');
+    setQSubject(q.subject);
+    setQChapter(q.chapter);
+    setQConcept(q.concept || '');
+    setQText(q.question);
+    setQExamType(q.exam_type || 'JEE');
+    setQType(q.question_type || 'Multiple Choice');
+    setQDifficulty(q.difficulty_level || 'Medium');
+    
+    const isNum = (q.question_type === 'Numerical' || !q.options || q.options.length === 0);
+    if (isNum) {
+      setQNumericalAnswer(q.answer);
+      setQOptions(['', '', '', '']);
+      setQOptionImages(['', '', '', '']);
+    } else {
+      setQOptions(q.options);
+      setQAnswer(q.answer);
+      setQOptionImages(q.option_images && q.option_images.length > 0 ? q.option_images : ['', '', '', '']);
+      setQNumericalAnswer('');
+    }
+    
+    setQImageUrl(q.image_url || '');
+    setqDetailedSolution(q.detailed_solution || '');
+    setqSolutionImageUrl(q.solution_image_url || '');
+
+    // Scroll directly to creation form
+    if (formRef.current) {
+      formRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingQId(null);
+    setQText('');
+    setQOptions(['', '', '', '']);
+    setQOptionImages(['', '', '', '']);
+    setQNumericalAnswer('');
+    setQImageUrl('');
+    setqDetailedSolution('');
+    setqSolutionImageUrl('');
   };
 
   const handleBulkUpload = async (e) => {
@@ -214,10 +500,11 @@ export default function AdminDashboard() {
       const res = await api.post('/admin/questions/bulk', payload);
       setQMsg(res.data.message);
       setBulkJson('');
-      fetchQuestions();
+      setQPage(1);
+      fetchQuestions(1);
     } catch (err) {
       if (err instanceof SyntaxError) {
-        setQErr('Invalid JSON syntax. Ensure it matches [{ "subject": "...", ... }]');
+        setQErr('Invalid JSON syntax. Ensure it matches NCERT bulk format.');
       } else {
         setQErr(err.response?.data?.detail || 'Bulk upload failed.');
       }
@@ -225,10 +512,11 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteQuestion = async (qId) => {
-    if (!window.confirm('Delete this question?')) return;
+    if (!window.confirm('Delete this question permanently?')) return;
     try {
       await api.delete(`/admin/questions/${qId}`);
-      fetchQuestions();
+      setQPage(1);
+      fetchQuestions(1);
     } catch (err) {
       console.error(err);
     }
@@ -244,9 +532,22 @@ export default function AdminDashboard() {
       const res = await api.post('/admin/questions/bulk-delete', selectedQIds);
       setQMsg(res.data.message);
       setSelectedQIds([]);
-      fetchQuestions();
+      setQPage(1);
+      fetchQuestions(1);
     } catch (err) {
       setQErr(err.response?.data?.detail || 'Failed to bulk delete questions.');
+    }
+  };
+
+  const handleConceptFilterClick = async (cName) => {
+    if (!cName) return;
+    try {
+      const res = await api.get('/teachers/concepts-count', { params: { concept: cName } });
+      setActiveConceptInfo({ name: cName, count: res.data.count });
+      setqFilterConcept(cName);
+      setqFilterChapter('');
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -281,8 +582,8 @@ export default function AdminDashboard() {
     try {
       const res = await api.get('/admin/audit-logs', {
         params: {
-          email: logEmail,
-          action: logAction
+          email: logEmail || undefined,
+          action: logAction || undefined
         }
       });
       setAuditLogs(res.data);
@@ -291,19 +592,16 @@ export default function AdminDashboard() {
     }
   };
 
-  // Trigger loads based on active tab
+  // Router loaders
   useEffect(() => {
     if (activeTab === 'teachers') {
       fetchTeachers();
-    } else if (activeTab === 'questions') {
-      setSelectedQIds([]);
-      fetchQuestions();
     } else if (activeTab === 'sessions') {
       fetchSessions();
     } else if (activeTab === 'logs') {
       fetchAuditLogs();
     }
-  }, [activeTab, qPage, qFilterSubject]);
+  }, [activeTab]);
 
   return (
     <div className="space-y-6 animate-fade-in relative z-10">
@@ -315,7 +613,7 @@ export default function AdminDashboard() {
             <HardDrive className="w-4 h-4" />
             System Control Panel
           </span>
-          <h1 className="text-2xl font-black mt-1">Manchester Admin Panel</h1>
+          <h1 className="text-2xl font-black mt-1">Manchester Admin Dashboard</h1>
         </div>
       </div>
 
@@ -372,7 +670,6 @@ export default function AdminDashboard() {
       {/* ==================================================== */}
       {activeTab === 'teachers' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Add Teacher Form */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm h-fit">
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
               <Plus className="w-5 h-5 text-brand-600" />
@@ -438,7 +735,6 @@ export default function AdminDashboard() {
             </form>
           </div>
 
-          {/* Teachers List Table */}
           <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm overflow-hidden">
             <h2 className="text-lg font-bold mb-4">Authorized Accounts</h2>
             <div className="overflow-x-auto">
@@ -465,7 +761,6 @@ export default function AdminDashboard() {
                       <td className="py-3 text-center">
                         <button
                           onClick={() => handleToggleTeacherStatus(t._id, t.is_active)}
-                          title="Click to toggle status"
                           className="focus:outline-none"
                         >
                           {t.is_active ? (
@@ -484,7 +779,6 @@ export default function AdminDashboard() {
                           <button
                             onClick={() => handleDeleteTeacher(t._id)}
                             className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 rounded"
-                            title="Delete Account"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -504,15 +798,13 @@ export default function AdminDashboard() {
       {/* ==================================================== */}
       {activeTab === 'questions' && (
         <div className="space-y-6">
-          
-          {/* Question Add & Bulk Upload forms */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div ref={formRef} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
-            {/* Create Single Question */}
+            {/* Form component (reusable for Create & Edit) */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm">
-              <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-800 dark:text-white">
                 <Plus className="w-5 h-5 text-brand-600" />
-                Add Single Question
+                {editingQId ? 'Edit Question' : 'Add Single Question'}
               </h2>
 
               {qMsg && (
@@ -526,13 +818,45 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              <form onSubmit={handleAddQuestion} className="space-y-3">
+              <form onSubmit={handleFormSubmit} className="space-y-4">
+                
+                {/* Class Mapping Selection */}
                 <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1 flex justify-between items-center">
+                      <span>NCERT Class</span>
+                      <button 
+                        type="button"
+                        onClick={() => setIsFormClassLocked(!isFormClassLocked)}
+                        className="text-[10px] text-brand-600 font-bold"
+                      >
+                        {isFormClassLocked ? 'Unlock' : 'Lock'}
+                      </button>
+                    </label>
+                    <select
+                      value={qFormClass}
+                      disabled={isFormClassLocked}
+                      onChange={(e) => {
+                        setqFormClass(e.target.value);
+                        setQChapter('');
+                        setQConcept('');
+                      }}
+                      className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white disabled:opacity-70"
+                    >
+                      <option value="11th">Class 11th</option>
+                      <option value="12th">Class 12th</option>
+                    </select>
+                  </div>
+                  
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">Subject</label>
                     <select
                       value={qSubject}
-                      onChange={(e) => setQSubject(e.target.value)}
+                      onChange={(e) => {
+                        setQSubject(e.target.value);
+                        setQChapter('');
+                        setQConcept('');
+                      }}
                       className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white"
                     >
                       {subjectsList.map((sub) => (
@@ -540,16 +864,75 @@ export default function AdminDashboard() {
                       ))}
                     </select>
                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">Chapter Name</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Thermodynamics"
+                    <select
                       value={qChapter}
-                      onChange={(e) => setQChapter(e.target.value)}
+                      onChange={(e) => {
+                        setQChapter(e.target.value);
+                        setQConcept('');
+                      }}
                       className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white"
-                    />
+                    >
+                      {formChapters.map((ch) => (
+                        <option key={ch} value={ch}>{ch}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Concept</label>
+                    <select
+                      value={qConcept}
+                      onChange={(e) => setQConcept(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white"
+                    >
+                      {formConcepts.map((con) => (
+                        <option key={con} value={con}>{con}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Exam Target</label>
+                    <select
+                      value={qExamType}
+                      onChange={(e) => setQExamType(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white"
+                    >
+                      <option value="JEE">JEE</option>
+                      <option value="NEET">NEET</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Assessment Type</label>
+                    <select
+                      value={qType}
+                      onChange={(e) => setQType(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white"
+                    >
+                      <option value="Multiple Choice">Multiple Choice (MCQ)</option>
+                      <option value="Numerical">Numerical Assessment</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Difficulty Level</label>
+                    <select
+                      value={qDifficulty}
+                      onChange={(e) => setQDifficulty(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white"
+                    >
+                      <option value="Easy">Easy</option>
+                      <option value="Medium">Medium</option>
+                      <option value="Hard">Hard</option>
+                    </select>
                   </div>
                 </div>
 
@@ -558,141 +941,190 @@ export default function AdminDashboard() {
                   <textarea
                     rows={2}
                     required
-                    placeholder="Enter question text here. Use $$[equation]$$ for display math and $[equation]$ for inline math."
+                    placeholder="Enter question text here."
                     value={qText}
                     onChange={(e) => setQText(e.target.value)}
                     className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white font-mono"
                   />
                 </div>
 
-                {/* Options inputs */}
-                <div className="grid grid-cols-2 gap-3">
-                  {qOptions.map((opt, oIdx) => {
-                    const label = String.fromCharCode(65 + oIdx); // A, B, C, D
-                    // Strip the "A. ", "B. " prefix for the visual input value to avoid double-prepending bugs
-                    const displayValue = opt.startsWith(`${label}. `) ? opt.substring(3) : opt;
-                    return (
-                      <div key={oIdx}>
-                        <label className="block text-xs font-bold text-slate-500 mb-1">Option {label}</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder={`Option ${label}`}
-                          value={displayValue}
-                          onChange={(e) => {
-                            const updated = [...qOptions];
-                            updated[oIdx] = `${label}. ${e.target.value}`;
-                            setQOptions(updated);
-                          }}
-                          className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white"
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-
+                {/* Main Question Image */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Correct Answer</label>
-                  <select
-                    value={qAnswer}
-                    onChange={(e) => setQAnswer(e.target.value)}
-                    className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white"
-                  >
-                    <option value="A">Option A</option>
-                    <option value="B">Option B</option>
-                    <option value="C">Option C</option>
-                    <option value="D">Option D</option>
-                  </select>
-                </div>
-
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <label className="block text-xs font-bold text-slate-500">Question Image (Optional)</label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setImageInputMode(imageInputMode === 'upload' ? 'url' : 'upload');
-                        setQImageUrl('');
-                      }}
-                      className="text-[10px] text-brand-600 hover:underline font-bold"
-                    >
-                      {imageInputMode === 'upload' ? 'Or paste web image URL' : 'Or drag & drop/paste file'}
-                    </button>
-                  </div>
-
-                  {imageInputMode === 'upload' ? (
-                    <div 
-                      onDragEnter={handleDrag}
-                      onDragOver={handleDrag}
-                      onDragLeave={handleDrag}
-                      onDrop={handleDrop}
-                      onPaste={handlePasteImage}
-                      className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all ${
-                        isDragActive 
-                          ? 'border-brand-500 bg-brand-50/10' 
-                          : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 hover:bg-slate-100 dark:hover:bg-slate-900/30'
-                      }`}
-                      onClick={() => document.getElementById('image-upload-input').click()}
-                    >
-                      <input
-                        id="image-upload-input"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          if (e.target.files && e.target.files[0]) {
-                            handleImageFile(e.target.files[0]);
-                          }
-                        }}
-                      />
-                      {qImageUrl ? (
-                        <div className="relative group/img max-w-xs mx-auto" onClick={(e) => e.stopPropagation()}>
-                          <img src={qImageUrl} alt="Preview" className="max-h-24 mx-auto rounded border border-slate-200 shadow-sm" />
-                          <button
-                            type="button"
-                            onClick={() => setQImageUrl('')}
-                            className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-md transition-all hover:scale-110"
-                            title="Remove Image"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="py-2 text-slate-400 select-none">
-                          <Upload className="w-6 h-6 mx-auto mb-1 text-slate-400 dark:text-slate-600" />
-                          <span className="text-xs font-bold block text-slate-650 dark:text-slate-400">Drag & Drop image here</span>
-                          <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5">Click to browse or Paste image directly (Ctrl+V)</span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="relative">
-                      <input
-                        type="url"
-                        placeholder="https://example.com/image.png"
-                        value={qImageUrl}
-                        onChange={(e) => setQImageUrl(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white"
-                      />
-                      {qImageUrl && (
-                        <div className="mt-2" onClick={(e) => e.stopPropagation()}>
-                          <img src={qImageUrl} alt="URL Preview" className="max-h-24 mx-auto rounded border border-slate-200 shadow-sm" />
-                        </div>
-                      )}
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Question Image (Optional)</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileChange(e.target.files[0], setQImageUrl)}
+                    className="w-full text-xs text-slate-500"
+                  />
+                  {qImageUrl && (
+                    <div className="mt-2 relative w-fit">
+                      <img src={qImageUrl} alt="Preview" className="max-h-24 rounded border" />
+                      <button 
+                        type="button" 
+                        onClick={() => setQImageUrl('')} 
+                        className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-0.5 text-[8px]"
+                      >
+                        ✕
+                      </button>
                     </div>
                   )}
                 </div>
 
-                <button
-                  type="submit"
-                  className="w-full py-2 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-lg text-sm transition-all"
-                >
-                  Create Question
-                </button>
+                {/* MCQ Options Fields vs Numerical Field */}
+                {qType === 'Multiple Choice' ? (
+                  <div className="space-y-3">
+                    <span className="block text-xs font-bold text-slate-400 border-b pb-1">MCQ Options</span>
+                    
+                    {qOptions.map((opt, oIdx) => {
+                      const label = String.fromCharCode(65 + oIdx);
+                      const displayVal = opt.startsWith(`${label}. `) ? opt.substring(3) : opt;
+
+                      return (
+                        <div key={oIdx} className="space-y-1 bg-slate-50/50 dark:bg-slate-950/20 p-2.5 rounded-lg border border-slate-150 dark:border-slate-850">
+                          <div className="flex gap-2 items-center">
+                            <span className="text-xs font-black text-slate-400">{label}</span>
+                            <input
+                              type="text"
+                              required
+                              placeholder={`Option ${label}`}
+                              value={displayVal}
+                              onChange={(e) => {
+                                const updated = [...qOptions];
+                                updated[oIdx] = `${label}. ${e.target.value}`;
+                                setQOptions(updated);
+                              }}
+                              className="flex-1 px-3 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white"
+                            />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              id={`opt-img-input-${oIdx}`}
+                              className="hidden"
+                              onChange={(e) => handleFileChange(e.target.files[0], (data) => {
+                                const updated = [...qOptionImages];
+                                updated[oIdx] = data;
+                                setQOptionImages(updated);
+                              })}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => document.getElementById(`opt-img-input-${oIdx}`).click()}
+                              className="px-2 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 rounded text-xs font-semibold"
+                            >
+                              Add Image
+                            </button>
+                          </div>
+
+                          {qOptionImages[oIdx] && (
+                            <div className="ml-5 mt-1.5 relative w-fit">
+                              <img src={qOptionImages[oIdx]} alt="Option preview" className="max-h-16 rounded border" />
+                              <button 
+                                type="button" 
+                                onClick={() => {
+                                  const updated = [...qOptionImages];
+                                  updated[oIdx] = '';
+                                  setQOptionImages(updated);
+                                }} 
+                                className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-0.5 text-[8px]"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">Correct Option</label>
+                      <select
+                        value={qAnswer}
+                        onChange={(e) => setQAnswer(e.target.value)}
+                        className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white"
+                      >
+                        <option value="A">Option A</option>
+                        <option value="B">Option B</option>
+                        <option value="C">Option C</option>
+                        <option value="D">Option D</option>
+                      </select>
+                    </div>
+
+                  </div>
+                ) : (
+                  <div className="p-3 bg-slate-50 dark:bg-slate-950/30 border border-slate-200 dark:border-slate-850 rounded-xl space-y-2">
+                    <label className="block text-xs font-bold text-slate-500">Correct Numerical Value</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. 5.8 or -12"
+                      value={qNumericalAnswer}
+                      onChange={(e) => setQNumericalAnswer(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white font-mono"
+                    />
+                  </div>
+                )}
+
+                {/* Detailed Solution Block */}
+                <div className="border-t pt-3 mt-4 space-y-3">
+                  <span className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Detailed Solution Details</span>
+                  
+                  <div>
+                    <label className="block text-xs font-bold text-slate-550 mb-1">Solution Explanation Text</label>
+                    <textarea
+                      rows={2}
+                      placeholder="Enter detailed solution text..."
+                      value={qDetailedSolution}
+                      onChange={(e) => setqDetailedSolution(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-550 mb-1">Solution Diagram Image (Optional)</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileChange(e.target.files[0], setqSolutionImageUrl)}
+                      className="w-full text-xs text-slate-500"
+                    />
+                    {qSolutionImageUrl && (
+                      <div className="mt-2 relative w-fit">
+                        <img src={qSolutionImageUrl} alt="Solution preview" className="max-h-24 rounded border animate-fade-in" />
+                        <button 
+                          type="button" 
+                          onClick={() => setqSolutionImageUrl('')} 
+                          className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-0.5 text-[8px]"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    className="flex-1 py-2 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-lg text-sm transition-all"
+                  >
+                    {editingQId ? 'Save Changes' : 'Create Question'}
+                  </button>
+                  {editingQId && (
+                    <button
+                      type="button"
+                      onClick={cancelEdit}
+                      className="px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-lg text-sm transition-all"
+                    >
+                      Cancel Edit
+                    </button>
+                  )}
+                </div>
+
               </form>
             </div>
 
-            {/* Bulk Upload Questions */}
+            {/* Bulk Upload Block */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm flex flex-col justify-between">
               <div>
                 <h2 className="text-lg font-bold mb-2 flex items-center gap-2">
@@ -700,17 +1132,17 @@ export default function AdminDashboard() {
                   Bulk Upload via JSON
                 </h2>
                 <p className="text-xs text-slate-400 mb-4">
-                  Paste a JSON array of question documents. Options must start with letter labels.
+                  Paste a JSON array of question documents. Parameters: `Question`, `Options` (MCQ only), `Answer`, `Class`, `Difficulty Level`, `Concept`, `Image Url`, `Solution`, `Solution Image Url`, `Option Images`.
                 </p>
                 
                 <form onSubmit={handleBulkUpload} className="space-y-4">
                   <textarea
-                    rows={8}
+                    rows={12}
                     required
-                    placeholder={`[\n  {\n    "subject": "Physics",\n    "chapter": "Relativity",\n    "question": "What is E?",\n    "options": ["A. mc^2", "B. mc", "C. m/c", "D. c^2"],\n    "answer": "A",\n    "image_url": ""\n  }\n]`}
+                    placeholder={`[\n  {\n    "class": "11th",\n    "subject": "Physics",\n    "chapter": "Motion in a Plane",\n    "concept": "Projectile Motion",\n    "difficulty_level": "Medium",\n    "question_type": "Multiple Choice",\n    "question": "A projectile is thrown at...",\n    "options": ["A. Option A", "B. Option B", "C. Option C", "D. Option D"],\n    "option_images": ["urlA", "", "", ""],\n    "answer": "A",\n    "detailed_solution": "Detailed math explanation...",\n    "solution_image_url": "urlSolution"\n  }\n]`}
                     value={bulkJson}
                     onChange={(e) => setBulkJson(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white font-mono"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs dark:text-white font-mono"
                   />
                   <button
                     type="submit"
@@ -724,20 +1156,34 @@ export default function AdminDashboard() {
 
           </div>
 
-          {/* Questions Grid list */}
+          {/* Question viewing library */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
               <h2 className="text-lg font-bold">Existing Question Library</h2>
               
-              {/* Question list filters */}
-              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                <input
+                  type="text"
+                  placeholder="Search keywords..."
+                  value={qSearch}
+                  onChange={(e) => setQSearch(e.target.value)}
+                  className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs dark:text-white flex-1 md:flex-initial"
+                />
+
+                <select
+                  value={selectedQClass}
+                  onChange={(e) => setSelectedQClass(e.target.value)}
+                  className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs dark:text-white"
+                >
+                  <option value="">All Classes</option>
+                  <option value="11th">Class 11th</option>
+                  <option value="12th">Class 12th</option>
+                </select>
+
                 <select
                   value={qFilterSubject}
-                  onChange={(e) => {
-                    setQFilterSubject(e.target.value);
-                    setQPage(1);
-                  }}
-                  className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold dark:text-white"
+                  onChange={(e) => setQFilterSubject(e.target.value)}
+                  className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs dark:text-white"
                 >
                   <option value="">All Subjects</option>
                   {subjectsList.map((s) => (
@@ -745,28 +1191,95 @@ export default function AdminDashboard() {
                   ))}
                 </select>
 
-                <div className="relative flex-1 sm:flex-initial">
-                  <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400">
-                    <Search className="w-3.5 h-3.5" />
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="Search keywords..."
-                    value={qSearch}
-                    onChange={(e) => {
-                      setQSearch(e.target.value);
-                      setQPage(1);
-                    }}
-                    className="pl-8 pr-3 py-1.5 w-full sm:w-48 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs dark:text-white"
-                  />
-                </div>
+                <select
+                  value={qFilterChapter}
+                  onChange={(e) => setQFilterChapter(e.target.value)}
+                  className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs dark:text-white"
+                >
+                  <option value="">All Chapters</option>
+                  {filterChapters.map((ch) => (
+                    <option key={ch} value={ch}>{ch}</option>
+                  ))}
+                </select>
               </div>
             </div>
+
+            {/* Advanced tags row filters */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-slate-50/50 dark:bg-slate-950/20 p-4 rounded-xl mb-4 border border-slate-100 dark:border-slate-850">
+              
+              <div>
+                <label className="block text-[10px] font-bold text-slate-450 uppercase mb-1">Target Exam</label>
+                <select
+                  value={qFilterExam}
+                  onChange={(e) => setQFilterExam(e.target.value)}
+                  className="w-full px-2.5 py-1 bg-white dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded text-xs dark:text-white cursor-pointer"
+                >
+                  <option value="">All Exams</option>
+                  <option value="JEE">JEE</option>
+                  <option value="NEET">NEET</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-455 uppercase mb-1">Question Type</label>
+                <select
+                  value={qFilterType}
+                  onChange={(e) => setQFilterType(e.target.value)}
+                  className="w-full px-2.5 py-1 bg-white dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded text-xs dark:text-white cursor-pointer"
+                >
+                  <option value="">All Types</option>
+                  <option value="Multiple Choice">MCQ</option>
+                  <option value="Numerical">Numerical</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-455 uppercase mb-1">Difficulty</label>
+                <select
+                  value={qFilterDifficulty}
+                  onChange={(e) => setQFilterDifficulty(e.target.value)}
+                  className="w-full px-2.5 py-1 bg-white dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded text-xs dark:text-white cursor-pointer"
+                >
+                  <option value="">All Difficulties</option>
+                  <option value="Easy">Easy</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Hard">Hard</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-455 uppercase mb-1">Concept</label>
+                <select
+                  value={qFilterConcept}
+                  onChange={(e) => setqFilterConcept(e.target.value)}
+                  className="w-full px-2.5 py-1 bg-white dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded text-xs dark:text-white cursor-pointer"
+                >
+                  <option value="">All Concepts</option>
+                  {selectedQClass && filterConcepts.map((con) => {
+                    const count = filterConceptCounts[con] || 0;
+                    return (
+                      <option key={con} value={con}>
+                        {con} {count > 0 ? `(${count})` : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+            </div>
+
+            {/* Interactive Concept Banner */}
+            {activeConceptInfo && (
+              <div className="mb-4 p-3 bg-brand-50 dark:bg-brand-950/20 text-brand-700 dark:text-brand-400 rounded-lg border border-brand-100 dark:border-brand-900/30 flex justify-between items-center text-xs font-semibold">
+                <span>Concept: <strong>{activeConceptInfo.name}</strong> ({activeConceptInfo.count} questions)</span>
+                <button onClick={() => { setActiveConceptInfo(null); setqFilterConcept(''); }} className="hover:underline text-[10px]">Clear Filter</button>
+              </div>
+            )}
 
             {/* Bulk Selection Bar */}
             {questions.length > 0 && (
               <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-slate-950/60 rounded-xl border border-slate-100 dark:border-slate-850 mb-4 text-xs">
-                <label className="flex items-center gap-2 font-bold cursor-pointer text-slate-650 dark:text-slate-400 select-none">
+                <label className="flex items-center gap-2 font-bold cursor-pointer select-none text-slate-600 dark:text-slate-450">
                   <input
                     type="checkbox"
                     checked={questions.length > 0 && questions.every(q => selectedQIds.includes(q._id))}
@@ -786,13 +1299,13 @@ export default function AdminDashboard() {
 
                 {selectedQIds.length > 0 && (
                   <div className="flex items-center gap-3 animate-fade-in">
-                    <span className="font-extrabold text-brand-600 dark:text-brand-400">
+                    <span className="font-extrabold text-brand-655 dark:text-brand-400">
                       {selectedQIds.length} Selected
                     </span>
                     <button
                       type="button"
                       onClick={handleBulkDeleteQuestions}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold shadow shadow-red-600/20 transition-all hover:scale-105"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-red-655 hover:bg-red-500 text-white rounded-lg font-bold shadow transition-all hover:scale-105"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span>Delete Selected</span>
@@ -809,20 +1322,23 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* Questions list */}
+            {/* Questions Grid mapping */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {questions.map((q) => {
                 const isSelected = selectedQIds.includes(q._id);
+                const isNum = (q.question_type === 'Numerical' || !q.options || q.options.length === 0);
+
                 return (
                   <div 
                     key={q._id} 
-                    className={`border p-4 rounded-lg bg-slate-50 dark:bg-slate-950/40 relative group transition-all ${
+                    className={`border p-4 rounded-xl bg-slate-50 dark:bg-slate-950/40 relative group transition-all ${
                       isSelected 
                         ? 'border-brand-500/60 ring-1 ring-brand-500/25 bg-brand-50/5 dark:bg-brand-950/15' 
-                        : 'border-slate-100 dark:border-slate-850'
+                        : 'border-slate-200 dark:border-slate-850'
                     }`}
                   >
-                    {/* Checkbox for Bulk Selection */}
+                    
+                    {/* Bulk Delete Checkbox */}
                     <div className="absolute top-4 left-4 z-20">
                       <input
                         type="checkbox"
@@ -838,70 +1354,123 @@ export default function AdminDashboard() {
                       />
                     </div>
 
-                    <button
-                      onClick={() => handleDeleteQuestion(q._id)}
-                      className="absolute top-4 right-4 p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 rounded opacity-0 group-hover:opacity-100 transition-opacity z-20"
-                      title="Delete Question"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {/* Question Actions (Edit & Delete) */}
+                    <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                      <button
+                        onClick={() => startEditQuestion(q)}
+                        className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded"
+                        title="Edit Question"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteQuestion(q._id)}
+                        className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 rounded"
+                        title="Delete Question"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
 
-                    <div className="text-[10px] font-bold text-slate-400 uppercase pl-7">
-                      {q.subject} &bull; {q.chapter}
+                    {/* Question Data Badges */}
+                    <div className="flex flex-wrap gap-1.5 mb-2 pl-7 pr-12">
+                      <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase">
+                        {q.subject}
+                      </span>
+                      <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase">
+                        {q.chapter}
+                      </span>
+                      {q.class && (
+                        <span className="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/20 text-[9px] font-black text-blue-600 dark:text-blue-400">
+                          Class {q.class}
+                        </span>
+                      )}
+                      {q.exam_type && (
+                        <span className="px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-950/20 text-[9px] font-black text-purple-600 dark:text-purple-400">
+                          {q.exam_type}
+                        </span>
+                      )}
+                      {q.question_type && (
+                        <span className="px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-950/20 text-[9px] font-black text-amber-600 dark:text-amber-400">
+                          {q.question_type}
+                        </span>
+                      )}
+                      {q.difficulty_level && (
+                        <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[9px] font-black text-slate-500">
+                          {q.difficulty_level}
+                        </span>
+                      )}
+                      {q.concept && (
+                        <button 
+                          onClick={() => handleConceptFilterClick(q.concept)}
+                          className="px-1.5 py-0.5 rounded bg-teal-50 dark:bg-teal-950/20 hover:bg-teal-100 text-[9px] font-black text-teal-600 dark:text-teal-400 cursor-pointer"
+                        >
+                          Concept: {q.concept}
+                        </button>
+                      )}
                     </div>
                     
+                    {/* Question Content */}
                     <div className="text-sm font-bold text-slate-800 dark:text-slate-200 mt-2 pr-8 pl-7 leading-snug">
                       <MathJaxRenderer content={q.question} />
                     </div>
 
-                  {q.image_url && (
-                    <div className="my-2.5 max-w-full overflow-hidden rounded border border-slate-200/80 dark:border-slate-800 shadow-inner bg-white">
-                      <img 
-                        src={q.image_url} 
-                        alt="Question diagram" 
-                        className="max-h-24 w-auto object-contain mx-auto" 
-                      />
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-2 mt-3 text-xs text-slate-500 font-medium">
-                    {q.options.map((opt, oIdx) => (
-                      <div key={oIdx} className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 px-2.5 py-1.5 rounded truncate">
-                        <MathJaxRenderer content={opt} />
+                    {q.image_url && (
+                      <div className="my-2.5 max-w-full overflow-hidden rounded border border-slate-200 bg-white">
+                        <img 
+                          src={q.image_url} 
+                          alt="Question diagram" 
+                          className="max-h-24 w-auto object-contain mx-auto" 
+                        />
                       </div>
-                    ))}
-                  </div>
+                    )}
 
-                  <div className="text-xs text-emerald-600 dark:text-emerald-400 font-extrabold mt-3 border-t border-slate-100 dark:border-slate-800 pt-2">
-                    Correct Option: {q.answer}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                    {/* Options list */}
+                    {!isNum && q.options && q.options.length > 0 && (
+                      <div className="grid grid-cols-2 gap-2 mt-3 text-xs text-slate-500 font-medium">
+                        {q.options.map((opt, oIdx) => {
+                          const oImg = q.option_images && q.option_images[oIdx];
+                          return (
+                            <div key={oIdx} className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 px-2.5 py-1.5 rounded truncate flex flex-col gap-1">
+                              <MathJaxRenderer content={opt} />
+                              {oImg && <img src={oImg} alt="Option diagram" className="max-h-12 w-auto object-contain" />}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
 
-            {/* Questions list pagination */}
-            {qPages > 1 && (
-              <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
-                <span className="text-xs text-slate-500">Page {qPage} of {qPages}</span>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => setQPage((p) => Math.max(p - 1, 1))}
-                    disabled={qPage === 1}
-                    className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-xs font-semibold rounded hover:bg-slate-250 disabled:opacity-40"
-                  >
-                    Prev
-                  </button>
-                  <button
-                    onClick={() => setQPage((p) => Math.min(p + 1, qPages))}
-                    disabled={qPage === qPages}
-                    className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-xs font-semibold rounded hover:bg-slate-250 disabled:opacity-40"
-                  >
-                    Next
-                  </button>
+                    <div className="text-xs text-emerald-600 dark:text-emerald-400 font-extrabold mt-3 border-t border-slate-100 dark:border-slate-800 pt-2 flex justify-between items-center">
+                      <span>Correct Answer: {q.answer}</span>
+                    </div>
+
+                    {/* Solutions info */}
+                    {(q.detailed_solution || q.solution_image_url) && (
+                      <div className="mt-2.5 p-2 bg-slate-100/50 dark:bg-slate-900/30 rounded border text-[11px] text-slate-500 font-semibold space-y-1">
+                        <span className="block font-black text-slate-400 uppercase text-[9px] tracking-wide">Explanation:</span>
+                        {q.detailed_solution && <p className="line-clamp-2">{q.detailed_solution}</p>}
+                        {q.solution_image_url && <span className="text-[10px] text-blue-500 block">Has solution diagram</span>}
+                      </div>
+                    )}
+
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Continuous scroll loader */}
+            <div ref={loaderRef} className="py-8 text-center flex justify-center items-center">
+              {loading && (
+                <div className="flex gap-1 items-center text-slate-400 text-xs font-bold">
+                  <span className="w-2 h-2 rounded-full bg-brand-600 animate-bounce delay-100"></span>
+                  <span className="w-2 h-2 rounded-full bg-brand-600 animate-bounce delay-200"></span>
+                  <span>Loading more question resources...</span>
                 </div>
-              </div>
-            )}
+              )}
+              {!loading && qPage >= qPages && questions.length > 0 && (
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Questions scroll complete</span>
+              )}
+            </div>
 
           </div>
 
@@ -957,7 +1526,6 @@ export default function AdminDashboard() {
                         <button
                           onClick={() => handleForceLogout(s.email, s.session_id)}
                           className="px-2.5 py-1 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-950/60 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-900/30 rounded text-xs font-bold"
-                          title="Force immediate logout of this user"
                         >
                           Force Terminate
                         </button>
@@ -979,21 +1547,20 @@ export default function AdminDashboard() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <h2 className="text-lg font-bold">Security Audit Trail</h2>
 
-            {/* Audit log filters */}
             <div className="flex flex-wrap gap-2 w-full sm:w-auto">
               <input
                 type="text"
                 placeholder="Filter email..."
                 value={logEmail}
                 onChange={(e) => setLogEmail(e.target.value)}
-                className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs dark:text-white w-full sm:w-36"
+                className="px-3 py-1.5 bg-slate-55 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs dark:text-white w-full sm:w-36"
               />
               <input
                 type="text"
                 placeholder="Filter action..."
                 value={logAction}
                 onChange={(e) => setLogAction(e.target.value)}
-                className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs dark:text-white w-full sm:w-36"
+                className="px-3 py-1.5 bg-slate-55 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs dark:text-white w-full sm:w-36"
               />
               <button
                 onClick={fetchAuditLogs}
@@ -1007,7 +1574,7 @@ export default function AdminDashboard() {
           <div className="overflow-x-auto max-h-[500px]">
             <table className="w-full text-left text-sm relative">
               <thead className="sticky top-0 bg-white dark:bg-slate-900 z-10">
-                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-bold text-xs uppercase">
+                <tr className="border-b border-slate-205 dark:border-slate-800 text-slate-400 font-bold text-xs uppercase">
                   <th className="pb-3 bg-white dark:bg-slate-900">Timestamp</th>
                   <th className="pb-3 bg-white dark:bg-slate-900">Actor Email</th>
                   <th className="pb-3 bg-white dark:bg-slate-900">Action Type</th>
@@ -1030,7 +1597,7 @@ export default function AdminDashboard() {
                       <td className="py-2.5 font-bold uppercase tracking-tight">
                         {isSuspicious ? '⚠️ ' : ''}{l.action}
                       </td>
-                      <td className="py-2.5 font-semibold text-slate-600 dark:text-slate-400">{l.ip_address}</td>
+                      <td className="py-2.5 font-semibold text-slate-655 dark:text-slate-400">{l.ip_address}</td>
                       <td className="py-2.5 font-semibold text-slate-500">{l.device_id.substring(0, 12)}...</td>
                     </tr>
                   );

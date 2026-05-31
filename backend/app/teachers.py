@@ -118,6 +118,11 @@ async def get_subject_questions(
     subject: str = Query(None, description="The subject of the questions"),
     chapter: str = Query(None, description="Chapter filter"),
     search: str = Query(None, description="Search term in question text"),
+    class_level: str = Query(None, alias="class", description="Class filter (11th or 12th)"),
+    exam_type: str = Query(None, description="Exam type (NEET or JEE)"),
+    question_type: str = Query(None, description="Question type (Multiple Choice or Numerical)"),
+    difficulty_level: str = Query(None, description="Difficulty level (Easy, Medium, Hard)"),
+    concept: str = Query(None, description="Concept filter"),
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(10, ge=1, le=100, description="Questions per page"),
     current_user: dict = Depends(require_role(["teacher", "admin"]))
@@ -177,6 +182,21 @@ async def get_subject_questions(
         # Search keyword inside question text (case-insensitive regex)
         query_filter["question"] = {"$regex": search, "$options": "i"}
 
+    if class_level:
+        query_filter["class"] = {"$regex": f"^{class_level}$", "$options": "i"}
+
+    if exam_type:
+        query_filter["exam_type"] = {"$regex": f"^{exam_type}$", "$options": "i"}
+
+    if question_type:
+        query_filter["question_type"] = {"$regex": f"^{question_type}$", "$options": "i"}
+
+    if difficulty_level:
+        query_filter["difficulty_level"] = {"$regex": f"^{difficulty_level}$", "$options": "i"}
+
+    if concept:
+        query_filter["concept"] = {"$regex": f"^{concept}$", "$options": "i"}
+
     # 3. Pagination calculation
     skip = (page - 1) * limit
 
@@ -195,7 +215,15 @@ async def get_subject_questions(
             "question": clean_question_text(q.get("question", "")),
             "options": parse_jee_options(q.get("options")),
             "answer": q.get("answer", "A"),
-            "image_url": q.get("image_url", "")
+            "image_url": q.get("image_url", ""),
+            "class": q.get("class", "11th"),
+            "exam_type": q.get("exam_type", "JEE"),
+            "question_type": q.get("question_type", "Multiple Choice"),
+            "difficulty_level": q.get("difficulty_level", "Medium"),
+            "concept": q.get("concept", ""),
+            "detailed_solution": q.get("detailed_solution", ""),
+            "solution_image_url": q.get("solution_image_url", ""),
+            "option_images": q.get("option_images") if isinstance(q.get("option_images"), list) else ["", "", "", ""]
         })
 
     # Return results
@@ -249,6 +277,34 @@ async def get_subject_chapters(
 
     chapters = await questions_col.distinct("chapter", query_filter)
     return {"chapters": sorted([c for c in chapters if c])}
+
+# Endpoint to retrieve concept-specific question counts matching filters
+@router.get("/concepts-count")
+async def get_concepts_count(
+    subject: str = Query(None),
+    chapter: str = Query(None),
+    concept: str = Query(None),
+    current_user: dict = Depends(require_role(["teacher", "admin"]))
+):
+    query_filter = {}
+    if subject:
+        query_filter["subject"] = {"$regex": f"^{subject}$", "$options": "i"}
+    if chapter:
+        query_filter["chapter"] = {"$regex": f"^{chapter}$", "$options": "i"}
+    if concept:
+        query_filter["concept"] = {"$regex": f"^{concept}$", "$options": "i"}
+        count = await questions_col.count_documents(query_filter)
+        return {"concept": concept, "count": count}
+
+    pipeline = [
+        {"$match": query_filter},
+        {"$group": {"_id": "$concept", "count": {"$sum": 1}}},
+        {"$project": {"concept": "$_id", "count": 1, "_id": 0}},
+        {"$sort": {"concept": 1}}
+    ]
+    cursor = questions_col.aggregate(pipeline)
+    results = await cursor.to_list(length=1000)
+    return {"concepts": [r for r in results if r.get("concept")]}
 
 # Endpoint to log restricted actions from the frontend
 @router.post("/log-restricted-action")
