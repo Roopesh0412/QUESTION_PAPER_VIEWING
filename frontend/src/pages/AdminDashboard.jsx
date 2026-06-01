@@ -200,9 +200,8 @@ export default function AdminDashboard() {
 
   // Sync viewing filter chapters & concepts
   const fetchChaptersFromDB = useCallback(async (sub) => {
-    if (!sub) return;
     try {
-      const res = await api.get('/teachers/chapters', { params: { subject: sub } });
+      const res = await api.get('/teachers/chapters', { params: { subject: sub || undefined } });
       setFilterChapters(res.data.chapters);
     } catch (err) {
       console.error(err);
@@ -210,19 +209,46 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    const sub = qFilterSubject || 'Physics';
     if (selectedQClass) {
-      const classData = ncertSyllabus[selectedQClass]?.[sub] || {};
-      setFilterChapters(Object.keys(classData));
-      
-      if (qFilterChapter && classData[qFilterChapter]) {
-        setFilterConcepts(classData[qFilterChapter]);
+      if (!qFilterSubject) {
+        // Merge chapters from all subjects
+        const classData = ncertSyllabus[selectedQClass] || {};
+        const allChaps = [];
+        Object.keys(classData).forEach(sub => {
+          Object.keys(classData[sub]).forEach(ch => {
+            if (!allChaps.includes(ch)) {
+              allChaps.push(ch);
+            }
+          });
+        });
+        setFilterChapters(allChaps);
+        
+        if (qFilterChapter) {
+          let foundConcepts = [];
+          for (const sub of Object.keys(classData)) {
+            if (classData[sub][qFilterChapter]) {
+              foundConcepts = classData[sub][qFilterChapter];
+              break;
+            }
+          }
+          setFilterConcepts(foundConcepts);
+        } else {
+          setFilterConcepts([]);
+          setqFilterConcept('');
+        }
       } else {
-        setFilterConcepts([]);
-        setqFilterConcept('');
+        const classData = ncertSyllabus[selectedQClass]?.[qFilterSubject] || {};
+        setFilterChapters(Object.keys(classData));
+        
+        if (qFilterChapter && classData[qFilterChapter]) {
+          setFilterConcepts(classData[qFilterChapter]);
+        } else {
+          setFilterConcepts([]);
+          setqFilterConcept('');
+        }
       }
     } else {
-      fetchChaptersFromDB(sub);
+      fetchChaptersFromDB(qFilterSubject);
       setFilterConcepts([]);
       setqFilterConcept('');
     }

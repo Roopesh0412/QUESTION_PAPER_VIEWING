@@ -173,7 +173,7 @@ export default function TeacherDashboard() {
     if (userStr) {
       const u = JSON.parse(userStr);
       setSubject(u.subject);
-      setSelectedSubject(u.subject === 'All' ? 'Physics' : u.subject);
+      setSelectedSubject(u.subject === 'All' ? 'All' : u.subject);
     }
   }, []);
 
@@ -195,16 +195,43 @@ export default function TeacherDashboard() {
     if (!selectedSubject) return;
 
     if (selectedClass) {
-      // Map NCERT Chapters statically
-      const subjData = ncertSyllabus[selectedClass]?.[selectedSubject] || {};
-      setChapters(Object.keys(subjData));
-      
-      // Map concepts statically if chapter is active
-      if (chapter && subjData[chapter]) {
-        setConcepts(subjData[chapter]);
+      if (selectedSubject === 'All') {
+        const classData = ncertSyllabus[selectedClass] || {};
+        const allChaps = [];
+        Object.keys(classData).forEach(sub => {
+          Object.keys(classData[sub]).forEach(ch => {
+            if (!allChaps.includes(ch)) {
+              allChaps.push(ch);
+            }
+          });
+        });
+        setChapters(allChaps);
+
+        if (chapter) {
+          let foundConcepts = [];
+          for (const sub of Object.keys(classData)) {
+            if (classData[sub][chapter]) {
+              foundConcepts = classData[sub][chapter];
+              break;
+            }
+          }
+          setConcepts(foundConcepts);
+        } else {
+          setConcepts([]);
+          setConcept('');
+        }
       } else {
-        setConcepts([]);
-        setConcept('');
+        // Map NCERT Chapters statically
+        const subjData = ncertSyllabus[selectedClass]?.[selectedSubject] || {};
+        setChapters(Object.keys(subjData));
+        
+        // Map concepts statically if chapter is active
+        if (chapter && subjData[chapter]) {
+          setConcepts(subjData[chapter]);
+        } else {
+          setConcepts([]);
+          setConcept('');
+        }
       }
     } else {
       // Load chapters from Database dynamically
@@ -357,7 +384,7 @@ export default function TeacherDashboard() {
     setDifficulty('');
     setActiveConceptInfo(null);
     if (subject === 'All') {
-      setSelectedSubject('Physics');
+      setSelectedSubject('All');
     }
     setPage(1);
   };
@@ -464,6 +491,7 @@ export default function TeacherDashboard() {
               disabled={subject !== 'All'}
               className="block w-full px-3 py-2 bg-slate-55 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:border-brand-500 dark:text-white cursor-pointer disabled:bg-slate-100 dark:disabled:bg-slate-900 disabled:text-slate-500"
             >
+              {subject === 'All' && <option value="All">All Subjects</option>}
               <option value="Physics">Physics</option>
               <option value="Chemistry">Chemistry</option>
               <option value="Mathematics">Mathematics</option>
