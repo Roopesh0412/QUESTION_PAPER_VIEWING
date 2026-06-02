@@ -17,9 +17,14 @@ function ProtectedRoute({ children, allowedRoles }) {
   }
 
   const user = JSON.parse(userStr);
+  const isMantechAdmin = user.email && user.email.toLowerCase() === 'manchestertechnologiess@gmail.com';
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/unauthorized" replace />;
+    if (isMantechAdmin && allowedRoles.includes('admin')) {
+      // Allow admin bypass for the mantech admin email
+    } else {
+      return <Navigate to="/unauthorized" replace />;
+    }
   }
 
   return <Layout apiClient={api}>{children}</Layout>;
@@ -35,7 +40,9 @@ function RootRedirect() {
   }
 
   const user = JSON.parse(userStr);
-  if (user.role === 'admin') {
+  const isMantechAdmin = user.email && user.email.toLowerCase() === 'manchestertechnologiess@gmail.com';
+
+  if (user.role === 'admin' || isMantechAdmin) {
     return <Navigate to="/admin" replace />;
   }
   return <Navigate to="/dashboard" replace />;

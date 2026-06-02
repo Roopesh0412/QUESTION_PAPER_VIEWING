@@ -1,7 +1,16 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 export default function MathJaxRenderer({ content, className = '' }) {
   const containerRef = useRef(null);
+  const [displayContent, setDisplayContent] = useState(content);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDisplayContent(content);
+    }, 400); // 400ms debounce to prevent typesetting on every keystroke
+
+    return () => clearTimeout(handler);
+  }, [content]);
 
   useEffect(() => {
     if (containerRef.current && window.MathJax && window.MathJax.typesetPromise) {
@@ -9,14 +18,14 @@ export default function MathJaxRenderer({ content, className = '' }) {
       window.MathJax.typesetPromise([containerRef.current])
         .catch((err) => console.error('MathJax typeset error:', err));
     }
-  }, [content]);
+  }, [displayContent]);
 
   // Set the class "tex2jax_process" so that MathJax knows to scan and process this container
   return (
     <div 
       ref={containerRef} 
       className={`tex2jax_process ${className}`}
-      dangerouslySetInnerHTML={{ __html: content }}
+      dangerouslySetInnerHTML={{ __html: displayContent }}
     />
   );
 }

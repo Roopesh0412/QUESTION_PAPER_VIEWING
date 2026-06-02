@@ -73,6 +73,66 @@ const ncertSyllabus = {
       "Neural Control and Coordination": ["Neural System", "Human Neural System", "Neuron as Structural and Functional Unit of Neural System", "Central Neural System", "Reflex Action and Reflex Arc", "Sensory Reception and Processing"],
       "Chemical Coordination and Integration": ["Endocrine Glands and Hormones", "Human Endocrine System", "Hormones of Heart, Kidney and Gastrointestinal Tract", "Mechanism of Hormone Action"]
     }
+  },
+  "12th": {
+    "Physics": {
+      "Electric Charges and Fields": ["Electric Charge", "Conductors and Insulators", "Charging by Induction", "Basic Properties of Electric Charge", "Coulomb's Law", "Forces between Multiple Charges", "Electric Field", "Electric Field Lines", "Electric Flux", "Electric Dipole", "Dipole in a Uniform External Field", "Continuous Charge Distribution", "Gauss's Law", "Applications of Gauss's Law"],
+      "Electrostatic Potential and Capacitance": ["Electrostatic Potential", "Potential due to a Point Charge", "Potential due to an Electric Dipole", "Potential due to a System of Charges", "Equipotential Surfaces", "Potential Energy of a System of Charges", "Potential Energy in an External Field", "Electrostatics of Conductors", "Dielectrics and Polarisation", "Capacitors and Capacitance", "The Parallel Plate Capacitor", "Effect of Dielectric on Capacitance", "Combination of Capacitors", "Energy Stored in a Capacitor"],
+      "Current Electricity": ["Electric Current", "Electric Currents in Conductors", "Ohm's Law", "Drift of Electrons and the Origin of Resistivity", "Limitations of Ohm's Law", "Resistivity of Various Materials", "Temperature Dependence of Resistivity", "Electrical Energy, Power", "Cells, EMF, Internal Resistance", "Cells in Series and in Parallel", "Kirchhoff's Rules", "Wheatstone Bridge", "Meter Bridge", "Potentiometer"],
+      "Moving Charges and Magnetism": ["Magnetic Force", "Motion in a Magnetic Field", "Motion in Combined Electric and Magnetic Fields", "Magnetic Field due to a Current Element, Biot-Savart Law", "Magnetic Field on the Axis of a Circular Current Loop", "Ampere's Circuital Law", "The Solenoid and the Toroid", "Force between Two Parallel Currents, the Ampere", "Torque on Current Loop, Magnetic Dipole", "The Moving Coil Galvanometer"],
+      "Magnetism and Matter": ["The Bar Magnet", "Magnetism and Gauss's Law", "The Earth's Magnetism", "Magnetisation and Magnetic Intensity", "Magnetic Properties of Materials", "Permanent Magnets and Electromagnets"],
+      "Electromagnetic Induction": ["The Experiments of Faraday and Henry", "Magnetic Flux", "Faraday's Law of Induction", "Lenz's Law and Conservation of Energy", "Motional Electromotive Force", "Energy Consideration: A Quantitative Study", "Eddy Currents", "Inductance", "AC Generator"],
+      "Alternating Current": ["AC Voltage Applied to a Resistor", "Representation of AC Current and Voltage by Rotating Vectors - Phasors", "AC Voltage Applied to an Inductor", "AC Voltage Applied to a Capacitor", "AC Voltage Applied to a Series LCR Circuit", "Power in AC Circuit: The Power Factor", "LC Oscillations", "Transformers"],
+      "Electromagnetic Waves": ["Displacement Current", "Electromagnetic Waves", "Electromagnetic Spectrum"],
+      "Ray Optics and Optical Instruments": ["Reflection of Light by Spherical Mirrors", "Refraction", "Total Internal Reflection", "Refraction at Spherical Surfaces and by Lenses", "Refraction through a Prism", "Dispersion by a Prism", "Some Natural Phenomena due to Sunlight", "Optical Instruments"],
+      "Wave Optics": ["Huygens Principle", "Refraction and Reflection of Plane Waves using Huygens Principle", "Coherent and Incoherent Addition of Waves", "Interference of Light Waves and Young's Experiment", "Diffraction", "Polarisation"],
+      "Dual Nature of Radiation and Matter": ["Electron Emission", "Photoelectric Effect", "Experimental Study of Photoelectric Effect", "Photoelectric Effect and Wave Theory of Light", "Einstein's Photoelectric Equation: Energy Quantum of Radiation", "Particle Nature of Light: The Photon", "Wave Nature of Matter", "Davisson and Germer Experiment"],
+      "Atoms": ["Alpha-particle Scattering and Rutherford's Nuclear Model of Atom", "Atomic Spectra", "Bohr Model of the Hydrogen Atom", "The Line Spectra of the Hydrogen Atom", "De Broglie's Explanation of Bohr's Second Postulate of Quantisation"],
+      "Nuclei": ["Atomic Masses and Composition of Nucleus", "Size of the Nucleus", "Mass-Energy and Nuclear Binding Energy", "Nuclear Force", "Radioactivity", "Nuclear Energy", "Nuclear Fission", "Nuclear Fusion"],
+      "Semiconductor Electronics: Materials, Devices and Simple Circuits": ["Classification of Metals, Conductors and Semiconductors", "Intrinsic Semiconductor", "Extrinsic Semiconductor", "p-n Junction", "Semiconductor Diode", "Application of Junction Diode as a Rectifier", "Special Purpose p-n Junction Diodes", "Junction Transistor", "Digital Electronics and Logic Gates", "Integrated Circuits"]
+    },
+    "Chemistry": {
+      "Solutions": ["Types of Solutions", "Expressing Concentration of Solutions", "Solubility", "Vapour Pressure of Liquid Solutions", "Ideal and Non-ideal Solutions", "Colligative Properties and Determination of Molar Mass", "Abnormal Molar Masses"],
+      "Electrochemistry": ["Electrochemical Cells", "Galvanic Cells", "Nernst Equation", "Conductance of Electrolytic Solutions", "Electrolytic Cells and Electrolysis", "Batteries", "Fuel Cells", "Corrosion"],
+      "Chemical Kinetics": ["Rate of a Chemical Reaction", "Factors Influencing Rate of a Reaction", "Integrated Rate Equations", "Pseudo First Order Reaction", "Temperature Dependence of the Rate of a Reaction", "Collision Theory of Chemical Reactions"],
+      "d- and f-Block Elements": ["Position in the Periodic Table", "Electronic Configurations of the d-Block Elements", "General Properties of the Transition Elements (d-Block)", "Some Important Compounds of Transition Elements", "The Lanthanoids", "The Actinoids", "Some Applications of d and f-Block Elements"],
+      "Coordination Compounds": ["Werner's Theory of Coordination Compounds", "Definitions of Some Important Terms Pertaining to Coordination Compounds", "Nomenclature of Coordination Compounds", "Isomerism in Coordination Compounds", "Bonding in Coordination Compounds", "Bonding in Metal Carbonyls", "Importance and Applications of Coordination Compounds"],
+      "Haloalkanes and Haloarenes": ["Classification", "Nomenclature", "Nature of C-X Bond", "Methods of Preparation of Haloalkanes", "Preparation of Haloarenes", "Physical Properties", "Chemical Reactions", "Polyhalogen Compounds"],
+      "Alcohols, Phenols and Ethers": ["Classification", "Nomenclature", "Structures of Functional Groups", "Alcohols and Phenols", "Some Commercially Important Alcohols", "Ethers"],
+      "Aldehydes, Ketones and Carboxylic Acids": ["Nomenclature and Structure of Carbonyl Group", "Preparation of Aldehydes and Ketones", "Physical Properties", "Chemical Reactions", "Uses of Aldehydes and Ketones", "Nomenclature and Structure of Carboxyl Group", "Methods of Preparation of Carboxylic Acids", "Physical Properties", "Chemical Reactions", "Uses of Carboxylic Acids"],
+      "Amines": ["Structure of Amines", "Classification", "Nomenclature", "Preparation of Amines", "Physical Properties", "Chemical Reactions", "Method of Preparation of Diazonium Salts", "Physical Properties", "Chemical Reactions", "Importance of Diazonium Salts in Synthesis of Aromatic Compounds"],
+      "Biomolecules": ["Carbohydrates", "Proteins", "Enzymes", "Vitamins", "Nucleic Acids", "Hormones"]
+    },
+    "Mathematics": {
+      "Relations and Functions": ["Types of Relations", "Types of Functions", "Composition of Functions and Invertible Function", "Binary Operations"],
+      "Inverse Trigonometric Functions": ["Introduction", "Basic Concepts", "Properties of Inverse Trigonometric Functions"],
+      "Matrices": ["Matrix", "Types of Matrices", "Operations on Matrices", "Transpose of a Matrix", "Symmetric and Skew Symmetric Matrices", "Elementary Operation of a Matrix", "Invertible Matrices"],
+      "Determinants": ["Determinant", "Properties of Determinants", "Area of a Triangle", "Minors and Cofactors", "Adjoint and Inverse of a Matrix", "Applications of Matrices and Determinants"],
+      "Continuity and Differentiability": ["Continuity", "Differentiability", "Exponential and Logarithmic Functions", "Logarithmic Differentiation", "Derivatives of Functions in Parametric Forms", "Second Order Derivative", "Mean Value Theorem"],
+      "Application of Derivatives": ["Rate of Change of Quantities", "Increasing and Decreasing Functions", "Tangents and Normals", "Approximations", "Maxima and Minima"],
+      "Integrals": ["Integration as an Inverse Process of Differentiation", "Methods of Integration", "Integrals of Some Particular Functions", "Integration by Partial Fractions", "Integration by Parts", "Definite Integral", "Fundamental Theorem of Calculus", "Evaluation of Definite Integrals by Substitution", "Some Properties of Definite Integrals"],
+      "Application of Integrals": ["Area under Simple Curves", "Area between Two Curves"],
+      "Differential Equations": ["Basic Concepts", "General and Particular Solutions of a Differential Equation", "Formation of a Differential Equation whose General Solution is given", "Methods of Solving First Order, First Degree Differential Equations"],
+      "Vector Algebra": ["Some Basic Concepts", "Types of Vectors", "Addition of Vectors", "Multiplication of a Vector by a Scalar", "Product of Two Vectors"],
+      "Three Dimensional Geometry": ["Direction Cosines and Direction Ratios of a Line", "Equation of a Line in Space", "Angle between Two Lines", "Shortest Distance between Two Lines", "Plane", "Coplanarity of Two Lines", "Angle between Two Planes", "Distance of a Point from a Plane", "Angle between a Line and a Plane"],
+      "Linear Programming": ["Linear Programming Problem and its Mathematical Formulation", "Different Types of Linear Programming Problems"],
+      "Probability": ["Conditional Probability", "Multiplication Theorem on Probability", "Independent Events", "Bayes' Theorem", "Random Variables and its Probability Distributions", "Bernoulli Trials and Binomial Distribution"]
+    },
+    "Biology": {
+      "Sexual Reproduction in Flowering Plants": ["Flower - A Fascinating Organ of Angiosperms", "Pre-fertilisation: Structures and Events", "Double Fertilisation", "Post-fertilisation: Structures and Events", "Apomixis and Polyembryony"],
+      "Human Reproduction": ["The Male Reproductive System", "The Female Reproductive System", "Gametogenesis", "Menstrual Cycle", "Fertilisation and Implantation", "Pregnancy and Embryonic Development", "Parturition and Lactation"],
+      "Reproductive Health": ["Reproductive Health - Problems and Strategies", "Population Explosion and Birth Control", "Medical Termination of Pregnancy (MTP)", "Sexually Transmitted Diseases (STDs)", "Infertility"],
+      "Principles of Inheritance and Variation": ["Mendel's Laws of Inheritance", "Inheritance of One Gene", "Inheritance of Two Genes", "Sex Determination", "Mutation", "Genetic Disorders"],
+      "Molecular Basis of Inheritance": ["The DNA", "The Search for Genetic Material", "RNA World", "Replication", "Transcription", "Genetic Code", "Translation", "Regulation of Gene Expression", "Human Genome Project", "DNA Fingerprinting"],
+      "Evolution": ["Origin of Life", "Evolution of Life Forms - A Theory", "What are the Evidences for Evolution?", "What is Adaptive Radiation?", "Biological Evolution", "Mechanism of Evolution", "Hardy-Weinberg Principle", "A Brief Account of Evolution", "Origin and Evolution of Man"],
+      "Human Health and Disease": ["Common Diseases in Humans", "Immunity", "AIDS", "Cancer", "Drugs and Alcohol Abuse"],
+      "Microbes in Human Welfare": ["Microbes in Household Products", "Microbes in Industrial Products", "Microbes in Sewage Treatment", "Microbes in Production of Biogas", "Microbes as Biocontrol Agents", "Microbes as Biofertilisers"],
+      "Biotechnology: Principles and Processes": ["Principles of Biotechnology", "Tools of Recombinant DNA Technology", "Processes of Recombinant DNA Technology"],
+      "Biotechnology and its Applications": ["Biotechnological Applications in Agriculture", "Biotechnological Applications in Medicine", "Transgenic Animals", "Ethical Issues"],
+      "Organisms and Populations": ["Organism and Its Environment", "Populations"],
+      "Ecosystem": ["Ecosystem - Structure and Function", "Productivity", "Decomposition", "Energy Flow", "Ecological Pyramids", "Ecological Succession", "Nutrient Cycling", "Ecosystem Services"],
+      "Biodiversity and Conservation": ["Biodiversity", "Biodiversity Conservation"]
+    }
   }
 };
 
@@ -110,11 +170,11 @@ export default function AdminDashboard() {
   const [qFilterSubject, setQFilterSubject] = useState('');
   const [selectedQClass, setSelectedQClass] = useState('');
   const [isQClassLocked, setIsQClassLocked] = useState(false);
-  const [qFilterChapter, setqFilterChapter] = useState('');
-  const [qFilterConcept, setqFilterConcept] = useState('');
-  const [qFilterExam, setqFilterExam] = useState('');
-  const [qFilterType, setqFilterType] = useState('');
-  const [qFilterDifficulty, setqFilterDifficulty] = useState('');
+  const [qFilterChapter, setQFilterChapter] = useState('');
+  const [qFilterConcept, setQFilterConcept] = useState('');
+  const [qFilterExam, setQFilterExam] = useState('');
+  const [qFilterType, setQFilterType] = useState('');
+  const [qFilterDifficulty, setQFilterDifficulty] = useState('');
   const [selectedQIds, setSelectedQIds] = useState([]);
   
   // Create / Edit Question Form states
@@ -234,7 +294,7 @@ export default function AdminDashboard() {
           setFilterConcepts(foundConcepts);
         } else {
           setFilterConcepts([]);
-          setqFilterConcept('');
+          setQFilterConcept('');
         }
       } else {
         const classData = ncertSyllabus[selectedQClass]?.[qFilterSubject] || {};
@@ -244,13 +304,13 @@ export default function AdminDashboard() {
           setFilterConcepts(classData[qFilterChapter]);
         } else {
           setFilterConcepts([]);
-          setqFilterConcept('');
+          setQFilterConcept('');
         }
       }
     } else {
       fetchChaptersFromDB(qFilterSubject);
       setFilterConcepts([]);
-      setqFilterConcept('');
+      setQFilterConcept('');
     }
   }, [selectedQClass, qFilterSubject, qFilterChapter, fetchChaptersFromDB]);
 
@@ -624,8 +684,8 @@ export default function AdminDashboard() {
     try {
       const res = await api.get('/teachers/concepts-count', { params: { concept: cName } });
       setActiveConceptInfo({ name: cName, count: res.data.count });
-      setqFilterConcept(cName);
-      setqFilterChapter('');
+      setQFilterConcept(cName);
+      setQFilterChapter('');
     } catch (err) {
       console.error(err);
     }
@@ -1291,8 +1351,12 @@ export default function AdminDashboard() {
 
                 <select
                   value={selectedQClass}
-                  onChange={(e) => setSelectedQClass(e.target.value)}
-                  className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs dark:text-white"
+                  onChange={(e) => {
+                    setSelectedQClass(e.target.value);
+                    setQFilterChapter('');
+                    setQFilterConcept('');
+                  }}
+                  className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-lg text-xs dark:text-white"
                 >
                   <option value="">All Classes</option>
                   <option value="11th">Class 11th</option>
@@ -1301,8 +1365,12 @@ export default function AdminDashboard() {
 
                 <select
                   value={qFilterSubject}
-                  onChange={(e) => setQFilterSubject(e.target.value)}
-                  className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs dark:text-white"
+                  onChange={(e) => {
+                    setQFilterSubject(e.target.value);
+                    setQFilterChapter('');
+                    setQFilterConcept('');
+                  }}
+                  className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-lg text-xs dark:text-white"
                 >
                   <option value="">All Subjects</option>
                   {subjectsList.map((s) => (
@@ -1312,8 +1380,11 @@ export default function AdminDashboard() {
 
                 <select
                   value={qFilterChapter}
-                  onChange={(e) => setQFilterChapter(e.target.value)}
-                  className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs dark:text-white"
+                  onChange={(e) => {
+                    setQFilterChapter(e.target.value);
+                    setQFilterConcept('');
+                  }}
+                  className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-lg text-xs dark:text-white"
                 >
                   <option value="">All Chapters</option>
                   {filterChapters.map((ch) => (
@@ -1371,7 +1442,7 @@ export default function AdminDashboard() {
                 <label className="block text-[10px] font-bold text-slate-455 uppercase mb-1">Concept</label>
                 <select
                   value={qFilterConcept}
-                  onChange={(e) => setqFilterConcept(e.target.value)}
+                  onChange={(e) => setQFilterConcept(e.target.value)}
                   className="w-full px-2.5 py-1 bg-white dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded text-xs dark:text-white cursor-pointer"
                 >
                   <option value="">All Concepts</option>
@@ -1392,7 +1463,7 @@ export default function AdminDashboard() {
             {activeConceptInfo && (
               <div className="mb-4 p-3 bg-brand-50 dark:bg-brand-950/20 text-brand-700 dark:text-brand-400 rounded-lg border border-brand-100 dark:border-brand-900/30 flex justify-between items-center text-xs font-semibold">
                 <span>Concept: <strong>{activeConceptInfo.name}</strong> ({activeConceptInfo.count} questions)</span>
-                <button onClick={() => { setActiveConceptInfo(null); setqFilterConcept(''); }} className="hover:underline text-[10px]">Clear Filter</button>
+                <button onClick={() => { setActiveConceptInfo(null); setQFilterConcept(''); }} className="hover:underline text-[10px]">Clear Filter</button>
               </div>
             )}
 
