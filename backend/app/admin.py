@@ -16,7 +16,7 @@ router = APIRouter(prefix="/admin", tags=["Admin Panel"])
 # Ensure only users with "admin" role can access the Admin Panel endpoints
 admin_auth = require_role(["admin"])
 
-def normalize_question_data(data: dict) -> dict:
+def normalize_question_data(data: dict, default_exam: Optional[str] = None) -> dict:
     normalized = {}
     
     # Helper to get value ignoring case and spaces/underscores
@@ -71,9 +71,14 @@ def normalize_question_data(data: dict) -> dict:
     elif "12" in normalized["class"]:
         normalized["class"] = "12th"
 
-    normalized["exam_type"] = get_val(["exam_type", "examType", "exam"]) or "JEE"
-    if str(normalized["exam_type"]).upper() in ("JEE", "NEET", "KCET"):
-        normalized["exam_type"] = str(normalized["exam_type"]).upper()
+    normalized["exam_type"] = get_val(["exam_type", "examType", "exam"]) or default_exam or "JEE"
+    normalized_exam_upper = str(normalized["exam_type"]).strip().upper()
+    if normalized_exam_upper in ("JEE", "NEET", "KCET"):
+        normalized["exam_type"] = normalized_exam_upper
+    else:
+        # Fallback to default_exam or default JEE if invalid format
+        default_exam_upper = str(default_exam).strip().upper() if default_exam else "JEE"
+        normalized["exam_type"] = default_exam_upper if default_exam_upper in ("JEE", "NEET", "KCET") else "JEE"
 
     # Question Type
     normalized["question_type"] = get_val(["question_type", "questionType", "assessment_type", "assessmentType"]) or "Multiple Choice"
@@ -285,6 +290,7 @@ async def create_question(
 async def bulk_upload_questions(
     payload: List[Dict[str, Any]],
     request: Request,
+    default_exam: Optional[str] = Query(None),
     current_user: dict = Depends(admin_auth)
 ):
     if current_user["email"].lower() != "manchestertechnologiess@gmail.com":
@@ -302,7 +308,7 @@ async def bulk_upload_questions(
     processed_texts = set()
     skipped_count = 0
     for raw_q in payload:
-        normalized = normalize_question_data(raw_q)
+        normalized = normalize_question_data(raw_q, default_exam=default_exam)
         q_text_stripped = normalized["question"].strip()
         q_text_lower = q_text_stripped.lower()
         

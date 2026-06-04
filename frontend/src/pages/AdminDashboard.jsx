@@ -207,6 +207,7 @@ export default function AdminDashboard() {
 
   // Bulk JSON state
   const [bulkJson, setBulkJson] = useState('');
+  const [bulkDefaultExam, setBulkDefaultExam] = useState('');
   const [qMsg, setQMsg] = useState('');
   const [qErr, setQErr] = useState('');
   const [loading, setLoading] = useState(false);
@@ -637,7 +638,9 @@ export default function AdminDashboard() {
       const parsed = JSON.parse(escapedJson);
       const payload = Array.isArray(parsed) ? parsed : [parsed];
       
-      const res = await api.post('/admin/questions/bulk', payload);
+      const res = await api.post('/admin/questions/bulk', payload, {
+        params: { default_exam: bulkDefaultExam || undefined }
+      });
       setQMsg(res.data.message);
       setBulkJson('');
       setQPage(1);
@@ -1311,14 +1314,30 @@ export default function AdminDashboard() {
                   Bulk Upload via JSON
                 </h2>
                 <p className="text-xs text-slate-400 mb-4">
-                  Paste a JSON array of question documents. Parameters: `Question`, `Options` (MCQ only), `Answer`, `Class`, `Difficulty Level`, `Concept`, `Image Url`, `Solution`, `Solution Image Url`, `Option Images`.
+                  Paste a JSON array of question documents. Parameters: `Question`, `Options` (MCQ only), `Answer`, `Class`, `Exam Type` (e.g. JEE, NEET, KCET), `Difficulty Level`, `Concept`, `Image Url`, `Solution`, `Solution Image Url`, `Option Images`.
                 </p>
                 
                 <form onSubmit={handleBulkUpload} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">
+                      Default Target Exam (if not specified in JSON)
+                    </label>
+                    <select
+                      value={bulkDefaultExam}
+                      onChange={(e) => setBulkDefaultExam(e.target.value)}
+                      className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm dark:text-white"
+                    >
+                      <option value="">Extract from JSON (Default to JEE)</option>
+                      <option value="JEE">Force/Default to JEE</option>
+                      <option value="NEET">Force/Default to NEET</option>
+                      <option value="KCET">Force/Default to KCET</option>
+                    </select>
+                  </div>
+
                   <textarea
                     rows={12}
                     required
-                    placeholder={`[\n  {\n    "class": "11th",\n    "subject": "Physics",\n    "chapter": "Motion in a Plane",\n    "concept": "Projectile Motion",\n    "difficulty_level": "Medium",\n    "question_type": "Multiple Choice",\n    "question": "A projectile is thrown at...",\n    "options": ["A. Option A", "B. Option B", "C. Option C", "D. Option D"],\n    "option_images": ["urlA", "", "", ""],\n    "answer": "A",\n    "detailed_solution": "Detailed math explanation...",\n    "solution_image_url": "urlSolution"\n  }\n]`}
+                    placeholder={`[\n  {\n    "class": "11th",\n    "subject": "Physics",\n    "chapter": "Motion in a Plane",\n    "concept": "Projectile Motion",\n    "exam_type": "NEET",\n    "difficulty_level": "Medium",\n    "question_type": "Multiple Choice",\n    "question": "A projectile is thrown at...",\n    "options": ["A. Option A", "B. Option B", "C. Option C", "D. Option D"],\n    "option_images": ["urlA", "", "", ""],\n    "answer": "A",\n    "detailed_solution": "Detailed math explanation...",\n    "solution_image_url": "urlSolution"\n  }\n]`}
                     value={bulkJson}
                     onChange={(e) => setBulkJson(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs dark:text-white font-mono"
